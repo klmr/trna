@@ -1,0 +1,5 @@
+source('scripts/pca.R')
+source('scripts/de-plots.R')
+source('scripts/de-gene-lists.R')
+source('scripts/correlation-plots.R')
+source('scripts/write-annotation.R')

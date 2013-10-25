@@ -1,0 +1,259 @@
+source('scripts/correlation.R')
+
+# TODO Redundant definition, consolidate in common helper file.
+preparePdf <- function (name, ...)
+    pdf(path('plots/correlation', paste(name, '.pdf', sep = '')), family = plotFamily, ...)
+
+pointSpread <- function (x, y, ...) {
+    points(x, y, ...)
+    linm <- lm(y ~ x)
+    rho <- cor(x, y, method = 'spearman')
+    text(max(x), min(y), bquote(rho == .(sprintf('%.2f', rho))), adj = c(1, 0))
+    #abline(0, 1, lty = 3)
+    abline(linm, lty = 2)
+}
+
+ps <- partial(pointSpread, cex = 0.8, pch = 16, col = transparent(colors[1]))
+
+# Override radial.plot options
+
+radial.plot <- function (data, ...) {
+    require(plotrix)
+    plotrix::radial.plot(t(data), rp.type = '', ...)
+    args <- list(t(data), rp.type = 'p', show.grid = FALSE,
+                 show.radial.grid = FALSE, add = TRUE)
+    args <- c(args, list(...))
+    args$main <- NULL
+    args$labels <- NULL
+    do.call(plotrix::radial.plot, args)
+}
+
+plotSpiderWeb <- function () {
+    plotRadial <- function (data, labels, main, ...) {
+        layout(matrix(c(1, 2), 1, 2, byrow = TRUE), widths = c(1, 0.2))
+        radial.plot(data, labels = labels, main = main, line.col = colors,
+                    lwd = 2, show.grid.labels = 3, ...)
+        plot.new()
+        legend('center', legend = stages, fill = colors, border = NA, bty = 'n', xpd = NA)
+    }
+
+    isotypeData <- groupby(trnaNormDataCond, trnaAnnotation$Type)
+    # Enforce uniform order between tRNA and mRNA plots.
+    isotypeData <- isotypeData[aminoAcids$Long, ]
+
+    for (tissue in tissues) {
+        data <- isotypeData[, grep(tissue, colnames(isotypeData))]
+        relative <- relativeData(data)
+        pdf(sprintf('plots/usage/trna-%s.pdf', tissue),
+            width = 6, height = 6, family = plotFamily)
+        plotRadial(relative, rownames(data),
+                   radial.lim = c(0, 0.1),
+                   main = sprintf('Isotype occupancy across stages in %s\n', tissue))
+        dev.off()
+    }
+}
+
+plotCodonsByType <- function () {
+    plotRadial <- function (trna, mrna, labels, main, ...) {
+        par(mar = rep(0, 4))
+        layout(matrix(c(1, 1, 1, 2, 3, 4), 2, 3, byrow = TRUE),
+               widths = c(0.4, 0.4, 0.1),
+               heights = c(0.15, 0.9))
+        plot.new()
+        text(0.5, 0.5, labels = main, cex = 3)
+        radial.plot(trna, labels = labels, line.col = colors, lwd = 2,
+                    show.grid.labels = 3, main = 'tRNA occupancy', ...)
+        radial.plot(mrna, labels = labels, line.col = colors, lwd = 2,
+                    show.grid.labels = 3, main = 'mRNA codon usage', ...)
+        plot.new()
+        legend('center', legend = stages, fill = colors, border = NA, bty = 'n', xpd = NA)
+    }
+
+    for (tissue in tissues) {
+        pdf(sprintf('plots/usage/codons-%s.pdf', tissue),
+            width = 6, height = 4, family = plotFamily)
+
+        for (aa in aminoAcids$Short) {
+            codons <- rownames(subset(geneticCode, AA == aa))
+            if (length(codons) == 1)
+                next
+
+            mrna <- codonUsageData[codons, grep(tissue, colnames(codonUsageData))]
+
+            long <- subset(aminoAcids, Short == aa)$Long
+            isotypes <- rownames(subset(trnaAnnotation, Type == long))
+            trna <- groupby(trnaNormDataCond[isotypes, grep(tissue, colnames(trnaNormDataCond))],
+                            trnaAnnotation[isotypes, 'Acceptor'])
+            rownames(trna) <- revcomp(rownames(trna))
+
+            cat(sprintf('%s (%s)\n', long, aa))
+            cat(codons)
+            cat('\n\n')
+
+            # Make them have common row names.
+
+            onlym <- setdiff(rownames(mrna), rownames(trna))
+            onlyt <- setdiff(rownames(trna), rownames(mrna))
+
+            if (length(onlyt) > 0)
+                mrna[onlyt, ] <- 0
+            if (length(onlym) > 0)
+                trna[onlym, ] <- 0
+
+            # Make sure their rows are in the same order, and make relative
+
+            mrna <- relativeData(mrna[codons, ])
+            trna <- relativeData(trna[codons, ])
+
+            # Finally, make sure the columns are in the same order.
+            colim <- sapply(stages, p(grep, colnames(mrna)))
+            colit <- sapply(stages, p(grep, colnames(trna)))
+
+            mrna <- `colnames<-`(mrna[, colim], stages)
+            trna <- `colnames<-`(trna[, colit], stages)
+
+            toNearest <- function (x, step)
+                round(x + step, -log10(step))
+
+            lim <- c(0, toNearest(max(max(trna), max(mrna)), 0.1))
+            plotRadial(trna, mrna, codons, sprintf('Codon usage for %s', long),
+                       radial.lim = lim)
+        }
+
+        dev.off()
+    }
+}
+
+# Scatter plot of amino acids by stages
+
+columnsForCondition <- function (trna, mrna, tissue, stage) {
+    cols <- lapply(list(trna, mrna), colnames)
+    lc <- length(cols[[1]])
+    thistissue <- lapply(cols, p(boolmask, lc) %.% lp(grep, tissue))
+    thisstage <- lapply(cols, p(boolmask, lc) %.% lp(grep, stage))
+    cols <- mapply(`&`, thisstage, thistissue)
+    data.frame(trna = trna[, cols[, 1]],
+               mrna = mrna[, cols[, 2]])
+}
+
+plotCodonsByStage <- function () {
+    trnaCodons <- groupby(trnaNormDataCond, trnaAnnotation[rownames(trnaNormDataCond), 'Acceptor'])
+    rownames(trnaCodons) <- revcomp(rownames(trnaCodons))
+    onlym <- setdiff(rownames(codonUsageData), rownames(trnaCodons))
+    trnaCodons[onlym, ] <- 0
+    # Ensure same row order.
+    trna <- relativeData(trnaCodons[rownames(codonUsageData), ])
+    mrna <- relativeData(codonUsageData)
+
+    par(mfrow = c(4, 3))
+
+    for (tissue in tissues) {
+        for (stage in stages) {
+            data <- columnsForCondition(trna, mrna, tissue, stage)
+            plot(data$trna, data$mrna,
+                 xlab = 'Proportion of tRNA isoacceptors',
+                 ylab = 'Proportion of mRNA codon usage',
+                 main = sprintf('Codons in %s %s', stage, tissue),
+                 col = ifelse(data$trna == 0, 'red', 'black'), pch = 20)
+            cd <- data[data$trna != 0, ]
+            #cd <- data
+            model <- lm(mrna ~ trna, cd)
+            abline(model)
+            par(usr = c(0, 1, 0, 1))
+            rho <- cor(cd$trna, cd$mrna, method = 'spearman')
+            r2 <- cor(cd$trna, cd$mrna, method = 'pearson')
+            text(1, 0, bquote(atop(' ' ~ rho == .(sprintf('%.2f', rho)),
+                                      R^2 == .(sprintf('%.2f', r2)))),
+                 adj = c(1.1, -0.1))
+        }
+    }
+}
+
+plotAminAcidsByStage <- function () {
+    trnaTypeUsage <- groupby(trnaNormDataCond, trnaAnnotation[rownames(trnaNormDataCond), 'Type'])
+    mrnaTypeUsage <- groupby(codonUsageData, geneticCode[rownames(codonUsageData), 'AA'])
+    mrnaTypeUsage <- mrnaTypeUsage[! rownames(mrnaTypeUsage) == 'Stop', ]
+    rownames(mrnaTypeUsage) <- sapply(rownames(mrnaTypeUsage),
+                                      function (aa) subset(aminoAcids, Short == aa)$Long)
+
+    # Ensure same row order.
+    trna <- relativeData(trnaTypeUsage[aminoAcids$Long, ])
+    mrna <- relativeData(mrnaTypeUsage[aminoAcids$Long, ])
+
+    par(mfrow = c(4, 3))
+
+    for (tissue in tissues) {
+        for (stage in stages) {
+            data <- columnsForCondition(trna, mrna, tissue, stage)
+            plot(data$trna, data$mrna,
+                 xlab = 'Proportion of tRNA isotypes',
+                 ylab = 'Proportion of mRNA amino acid usage',
+                 main = sprintf('Amino acids in %s %s', stage, tissue),
+                 pch = 20)
+            model <- lm(mrna ~ trna, data)
+            ci <- predict(model, interval = 'confidence', level = 0.99)
+            ciHigh <- sort(ci[, 'upr'])
+            ciLow <- sort(ci[, 'lwr'])
+            ordx <- sort(data$trna)
+            xx <- c(ordx, rev(ordx), ordx[1])
+            yy <- c(ciLow, rev(ciHigh), ciLow[1])
+            abline(model)
+            outliers <- (data$mrna < ci[, 'lwr']) | (data$mrna > ci[, 'upr'])
+            text(data$trna, data$mrna, labels = ifelse(outliers, rownames(data), ''), pos = 4)
+            polygon(xx, yy, col = '#00000040', border = NA)
+            par(usr = c(0, 1, 0, 1))
+            rho <- cor(data$trna, data$mrna, method = 'spearman')
+            r2 <- cor(data$trna, data$mrna, method = 'pearson')
+            text(1, 0, bquote(atop(' ' ~ rho == .(sprintf('%.2f', rho)),
+                                   R^2 == .(sprintf('%.2f', r2)))),
+                 adj = c(1.1, -0.1))
+        }
+    }
+}
+
+# FIXME This function requires a horrible data format. This can be fixed (only)
+# by creating manual plots (after `par(mfrow(...))`) instead of using `pairs`.
+plotConservation <- function (data, colf) {
+    pointsTissue <- function (t, colf)
+        function (x, y)
+            pointSpread(x[data$type == t], y[data$type == t],
+                        cex = 0.8, pch = 16, col = colf(tissueColor[t]))
+    pairs(data[, -ncol(data)],
+          upper.panel = pointsTissue('brain', colf),
+          lower.panel = pointsTissue('liver', colf),
+          main = ' ')
+    legend(0.38, 1.05 , legend = names(tissueColor), fill = tissueColor,
+           border = NA, ncol = 2, xpd = NA, bty = 'n')
+}
+
+if (! interactive()) {
+    cat('# Generating correlation plots\n')
+    trnaLoadData()
+    trnaSetupCountDataSet()
+    trnaNormalizeData()
+    trnaGroupFamilyAndType()
+
+    mkdir('plots/correlation')
+
+    preparePdf('gene-usage', width = 8, height = 8)
+    plotConservation(trnaStageCount, transparent)
+    dev.off()
+
+    preparePdf('acceptor-usage', width = 8, height = 8)
+    plotConservation(trnaByAcceptor, id)
+    dev.off()
+
+    loadAminoAcids()
+    loadGeneticCode()
+    mkdir('plots/usage')
+    plotSpiderWeb()
+
+    generateCodonUsageData()
+    plotCodonsByType()
+    pdf('plots/usage/codon-scatter.pdf', width = 7, height = 10, family = plotFamily)
+    plotCodonsByStage()
+    dev.off()
+    pdf('plots/usage/amino-acid-scatter.pdf', width = 7, height = 10, family = plotFamily)
+    plotAminAcidsByStage()
+    dev.off()
+}
