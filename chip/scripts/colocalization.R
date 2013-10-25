@@ -83,12 +83,18 @@ plot.colocalization <- function (x, ...) {
     Ecdf(c(x$de, x$non),
          group = c(rep('DE', length(x$de)),
                    rep('non-DE', length(x$non))),
-         main = sprintf('%s %s–%s (ϑ = %s, w = %s)',
-                        readable(x$tissue), readable(x$a), readable(x$b),
-                        x$threshold, x$windowSize),
-         xlab = 'x', ylab = 'Proportion ≤ x', ...)
-    #' @TODO Use proper math typesetting
-    text(0.8, 0.1, sprintf('p = %0.2g', x$test$p.value))
+         main = substitute(tissue ~ paste(a, '–', b) ~
+                          (paste('ϑ' == t, ', ', italic(w) == ww)),
+                           list(tissue = readable(x$tissue),
+                                a = readable(x$a),
+                                b = readable(x$b),
+                                t = x$threshold,
+                                ww = x$windowSize)),
+         #main = sprintf('%s %s–%s (ϑ = %s, w = %s)',
+         #               readable(x$tissue), readable(x$a), readable(x$b),
+         #               x$threshold, x$windowSize),
+         xlab = bquote(italic(x)), ylab = bquote('Proportion' <= italic(x)), ...)
+    text(0.8, 0.1, bquote(italic(p) == .(x$test$p.value)))
 }
 
 ks.test.colocalization <- function (x)
