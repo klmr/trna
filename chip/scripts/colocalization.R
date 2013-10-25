@@ -16,87 +16,65 @@ setdiff.default <- setdiff
 setdiff <- function (x, y)
     UseMethod('setdiff')
 
-colocalizationForContrast <- local({
-    # Holds the already calculated differential expression test results for all
-    # parameter combinations.
-    cache <- list()
+#' @param tissue the tissue
+#' @param a condition 1
+#' @param b condition 2
+#' @param threshold the threshold (FDR) at which to call significance
+#' @param windowSize The size of the window under consideration for neighboring genes
+colocalizationForContrast <- function (tissue, a, b, threshold, windowSize) {
+    require(plyr) # for adply
 
-    # NOTE Of course Hadley did it first … package ‘memoise’.
-    readCache <- function (data, tissue, a, b, threshold) {
-        type <- as.character(substitute(data))
-        key <- paste(type, tissue, a, b, threshold)
-        result <- cache[[key]]
-        if (is.null(result)) {
-            result <- nbinomTest(data, paste(tissue, a, sep = '-'), paste(tissue, b, sep = '-'))
-            cache[[key]] <- result
-        }
-        result
+    getDe <- function (data) subset(data, ! is.na(padj) & padj <= threshold)
+
+    annotate <- function (data, annotation)
+        annotation[data$id, c('Chr', 'Start', 'End')]
+
+    prepare <- function (data, annotation) {
+        all <- data[[tissue]][[a]][[b]]
+        de <- getDe(all)
+        up <- subset(de, foldChange < 1)
+        down <- subset(de, foldChange > 1)
+        no <- setdiff(all, de)
+        lapply(list(all = all, de = de, up = up, down = down, no = no),
+               annotate, annotation)
     }
 
-    #' @param tissue the tissue
-    #' @param a condition 1
-    #' @param b condition 2
-    #' @param threshold the threshold (FDR) at which to call significance
-    #' @param windowSize The size of the window under consideration for neighboring genes
-    function (tissue, a, b, threshold, windowSize) {
-        warning('threshold unused')
-        require(plyr) # for adply
+    countInNeighborhood <- function (trna, mrna)
+        count(mrna$Chr == trna$Chr &
+              mrna$End >= trna$Start - windowSize &
+              mrna$Start <= trna$End + windowSize)
 
-        getDe <- function (data) subset(data, ! is.na(padj) & padj <= threshold)
+    if (! all(mrnaAnnotation$Start <= mrnaAnnotation$End))
+        stop('Start <= End required for mrnaAnnotation!')
 
-        annotate <- function (data, annotation)
-            annotation[data$id, c('Chr', 'Start', 'End')]
+    trna <- prepare(trnaDeResults, trnaAnnotation)
+    mrna <- prepare(mrnaDeResults, mrnaAnnotation)
 
-        prepare <- function (data, annotation) {
-            all <- data[[tissue]][[a]][[b]]
-            de <- getDe(all)
-            up <- subset(de, foldChange < 1)
-            down <- subset(de, foldChange > 1)
-            no <- setdiff(all, de)
-            lapply(list(all = all, de = de, up = up, down = down, no = no),
-                   annotate, annotation)
-        }
+    nearDe <- list(de = c(adply(trna$up, ROWS, countInNeighborhood, mrna$up)$V1,
+                          adply(trna$down, ROWS, countInNeighborhood, mrna$down)$V1),
+                   bg = c(adply(trna$up, ROWS, countInNeighborhood, mrna$all)$V1,
+                          adply(trna$down, ROWS, countInNeighborhood, mrna$all)$V1))
+    nearNonDe <- list(de = adply(trna$no, ROWS, countInNeighborhood, mrna$de)$V1,
+                      bg = adply(trna$no, ROWS, countInNeighborhood, mrna$all)$V1)
 
-        countInNeighborhood <- function (trna, mrna)
-            count(mrna$Chr == trna$Chr &
-                  mrna$End >= trna$Start - windowSize &
-                  mrna$Start <= trna$End + windowSize)
+    nearDe$ratio <- nearDe$de / nearDe$bg
+    nearNonDe$ratio <- nearNonDe$de / nearNonDe$bg
 
-        if (! all(mrnaAnnotation$Start <= mrnaAnnotation$End))
-            stop('Start <= End required for mrnaAnnotation!')
-
-        trnaDe <- readCache(trnaCds, tissue, a, b, threshold)
-        mrnaDe <- readCache(mrnaCds, tissue, a, b, threshold)
-        trna <- prepare(trnaDe, trnaAnnotation)
-        mrna <- prepare(mrnaDe, mrnaAnnotation)
-
-        nearDe <- list(de = c(adply(trna$up, ROWS, countInNeighborhood, mrna$up)$V1,
-                              adply(trna$down, ROWS, countInNeighborhood, mrna$down)$V1),
-                       bg = c(adply(trna$up, ROWS, countInNeighborhood, mrna$all)$V1,
-                              adply(trna$down, ROWS, countInNeighborhood, mrna$all)$V1))
-        #    nearDe <- list(de = adply(trna$de, ROWS, countInNeighborhood, mrna$de)$V1,
-        #                   bg = adply(trna$de, ROWS, countInNeighborhood, mrna$all)$V1)
-        nearNonDe <- list(de = adply(trna$no, ROWS, countInNeighborhood, mrna$de)$V1,
-                          bg = adply(trna$no, ROWS, countInNeighborhood, mrna$all)$V1)
-
-        nearDe$ratio <- nearDe$de / nearDe$bg
-        nearNonDe$ratio <- nearNonDe$de / nearNonDe$bg
-
-        structure(list(de = nearDe$ratio,
-                       non = nearNonDe$ratio,
-                       tissue = tissue, a = a, b = b,
-                       test = ks.test(nearDe$ratio, nearNonDe$ratio),
-                       threshold = threshold, windowSize = windowSize),
-                  class = 'colocalization')
-    }
-})
+    structure(list(de = nearDe$ratio,
+                   non = nearNonDe$ratio,
+                   tissue = tissue, a = a, b = b,
+                   test = ks.test(nearDe$ratio, nearNonDe$ratio),
+                   threshold = threshold, windowSize = windowSize),
+              class = 'colocalization')
+}
 
 print.colocalization <- function (x, ...) {
     cat(sprintf('Colocalization between %s %s and %s\n\n',
                   readable(x$tissue), readable(x$a), readable(x$b)))
     cat(sprintf('D = %0.4f, p-value = %0.5f (ks.test)\n',
-                test$statistic['D'], test$p.value))
-    cat(sprintf('Parameters: ϑ = %s, w = %s\n', x$threshold, x$windowSize))
+                x$test$statistic['D'], x$test$p.value))
+    cat(sprintf('Parameters: ϑ = %s, w = %s, n = %s\n',
+                x$threshold, x$windowSize, length(x$de)))
     x
 }
 
@@ -134,117 +112,6 @@ if (! interactive()) {
 }
 
 #' @TODO Everything below this is old, remove.
-
-trnaLoadData()
-trnaSetupCountDataSet()
-trnaNormalizeData()
-trnaDeAnalysis()
-
-# Simple caching of results to speed up loading
-mrnaContrasts <- new.env(parent = emptyenv())
-
-# FIXME Ugly hack. Consolidate with other mRNA data.
-
-mrnaLoadContrast <- function (tissue, stageA, stageB) {
-    key <- paste(tissue, stageA, stageB)
-    if (exists(key, mrnaContrasts))
-        return(mrnaContrasts[[key]])
-
-    stageA <- gsub('\\.', '', stageA)
-    stageB <- gsub('\\.', '', stageB)
-    dataFile <- file.path('../rna/data/deseq',
-                          sprintf('%s_%s_VS_%s_%s.genes_de.tsv',
-                                  tissue, stageA,
-                                  tissue, stageB))
-    mrnaContrasts[[key]] <- read.table(dataFile, header = TRUE, row.names = 1)
-}
-
-mrnaDeGenesForContrast <- function (contrast, threshold = 0.05)
-    deGenesForContrast(contrast, threshold)
-
-mrnaNonDeGenesForContrast <- function (contrast, threshold = 0.05)
-    nonDeGenesForContrast(contrast, threshold)
-
-#' `exclude` has the format list(list(Chr, From, To), list(Chr, From, To), ...)
-testColocalization <- function (tissue, stageA, stageB, pval, windowSize, exclude) {
-    stageBIndex <- grep(stageB, names(stageContrasts[[tissue]][[stageA]]))
-    trnaContrast <- stageContrasts[[tissue]][[stageA]][[stageBIndex]]
-    # Only use actively expressed genes.
-    trnaContrast <- trnaContrast[trnaContrast$baseMeanA > 10 &
-                                 trnaContrast$baseMeanB > 10, ]
-
-    trnaGenes <- list(de = deGenesForContrast(trnaContrast, pval),
-                      no = nonDeGenesForContrast(trnaContrast, pval))
-
-    mrnaContrast <- mrnaLoadContrast(tissue, stageA, stageB)
-    mrnaContrast$GOterm <- NULL
-    mrnaContrast$GO <- NULL
-    mrnaContrast$KEGG <- NULL
-    mrnaContrast$lname <- NULL
-    mrnaContrast <- mrnaContrast[mrnaContrast$source == 'protein_coding', ]
-    mrnaContrast$source <- NULL
-    mrnaContrast$chr <- regmatches(mrnaContrast$locus,
-                                   regexpr('^[^:]+', mrnaContrast$locus))
-    noChr <- regmatches(mrnaContrast$locus, regexpr('(\\d+)\\.{2}(\\d+)', mrnaContrast$locus))
-    mrnaContrast$start <- as.numeric(regmatches(noChr, regexpr('^\\d+', noChr)))
-    mrnaContrast$end <- as.numeric(regmatches(noChr, regexpr('\\d+$', noChr)))
-    # Fix inverted start and end, we don't care about strands
-    for (i in 1 : nrow(mrnaContrast)) {
-        if (mrnaContrast[i, 'start'] > mrnaContrast[i, 'end']) {
-            tmp <- mrnaContrast[i, 'start']
-            mrnaContrast[i, 'start'] <- mrnaContrast[i, 'end']
-            mrnaContrast[i, 'end'] <- tmp
-        }
-    }
-
-    mrnaGenes <- list(de = mrnaDeGenesForContrast(mrnaContrast, pval),
-                      no = mrnaNonDeGenesForContrast(mrnaContrast, pval))
-
-    filterOutRegion <- function (genes, region) {
-        filtered <- with(genes, Chr == region$Chr & Start >= region$Start & End <= region$End)
-        cat(sprintf('Excluded %d genes\n', length(which(filtered))))
-        genes[! filtered, ]
-    }
-
-    countInVicinity <- function (set, ann, width)
-        nrow(subset(set, chr == ann$Chr &
-                    end >= ann$Start - width &
-                    end <= ann$End + width))
-
-    counts <- list(de = matrix(nrow = nrow(trnaGenes$de), ncol = 2),
-                   no = matrix(nrow = nrow(trnaGenes$no), ncol = 2))
-
-    for (m in c('de', 'no')) {
-        ann <- trnaAnnotation[trnaGenes[[m]]$id, ]
-        ann$Chr <- sub('chr', '', regmatches(rownames(ann), regexpr('chr[^.]+', rownames(ann))))
-        for (region in exclude)
-            ann <- filterOutRegion(ann, region)
-
-        for (i in 1 : nrow(trnaGenes[[m]])) {
-            # Count number of DE mRNAs and total mRNAs in vicinity
-            counts[[m]][i, 1] <- countInVicinity(mrnaGenes$de, ann[i, ], windowSize)
-            counts[[m]][i, 2] <- countInVicinity(mrnaGenes$no, ann[i, ], windowSize) +
-                                 counts[[m]][i, 1]
-        }
-
-        counts[[m]] <- cbind(counts[[m]], counts[[m]][, 1] / counts[[m]][, 2])
-        colnames(counts[[m]]) <- c('DE', 'All', 'Ratio')
-    }
-
-    ks <- ks.test(counts$de[, 'Ratio'], counts$no[, 'Ratio'])
-
-    require(Hmisc)
-    Ecdf(c(counts$de[, 'Ratio'], counts$no[, 'Ratio']),
-         main = sprintf('Distribution of ratio of proximal mRNAs to tRNAs\nin %s (%s vs %s) with p-val cutoff %s in %skb window',
-                        tissue, stageA, stageB, pval, windowSize / 1000),
-         xlab = 'Ratio (# diff. expr. mRNAs) / (# all mRNAs)', lwd = 2,
-         group = c(rep(1, nrow(counts$de)), rep(2, nrow(counts$no))), col = c('black', 'blue'))
-    text(0.8, 0.1, sprintf('p = %0.2f', ks$p.value))
-    legend('topleft', legend = c('Diff. expr. tRNAs', 'Non-diff. expr. tRNAs'),
-           fill = c('black', 'blue'), border = FALSE, bty = 'n')
-
-    list(counts = counts, ks = ks)
-}
 
 plotColocalization <- function () {
     stageA <- 'e15.5'
