@@ -98,6 +98,7 @@ plotSpiderWeb <- function () {
 }
 
 if (! interactive()) {
+    cat('# Generating mRNA codon usage data\n')
     mrnaLoadData()
     mrnaSetupCountDataSet()
     mrnaNormalizeData()
@@ -108,9 +109,11 @@ if (! interactive()) {
 
     writeCodonUsageData()
 
+    cat('# Generating mRNA expression correlation plots\n')
     mkdir('plots/correlation')
     plotCorrelationMatrix()
 
+    cat('# Generating mRNA codon usage plots\n')
     mkdir('plots/usage')
     plotSpiderWeb()
 }
