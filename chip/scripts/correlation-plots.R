@@ -2,7 +2,7 @@ source('scripts/correlation.R')
 
 # TODO Redundant definition, consolidate in common helper file.
 preparePdf <- function (name, ...)
-    pdf(path('plots/correlation', paste(name, '.pdf', sep = '')), family = plotFamily, ...)
+    pdf(file.path('plots/correlation', name, ext = '.pdf'), family = plotFamily, ...)
 
 pointSpread <- function (x, y, ...) {
     points(x, y, ...)

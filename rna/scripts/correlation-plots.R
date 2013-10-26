@@ -1,7 +1,64 @@
 source('scripts/correlation.R')
 
+#' Prepares a pairs plot and invokes a callback for each actual plot
+#'
+#' This function differs from \link{\code{pairs}} in that it only sets up the
+#' plot window, it doesn’t itself manage the data. This makes it more flexible.
+#' @param axes vector of labels denoting combinations to plot
+#' @param upper function that is called for plots above the diagonal
+#' @param lower function that is called for plots below the diagonal
+#'      (defaults to \code{upper})
+#' @param diagonal function that is called for plots on the diagonal
+#'      (defaults to a function which just prints the labels)
+#' @param .par list of additional \link{\code{par}}ameters to set
+#' @param .diag additional parameters to pass to \code{diagonal}
+#' @param ... remaining arguments are passed to each plot function
+#' @note The \code{upper} and \code{lower} callback function receive the
+#'  (\code{i}, \code{j}) entries of the \code{axes} corresponding to its plot.
+#'  The \code{diagonal} function receives its corresponding \code{axes} label.
+#' @examples
+#'  plotPairs(1:5, function (i, j) plot(x, y[i, j]))
+plotPairwise <- function (axes,
+                          upper,
+                          lower,
+                          diagonal,
+                          .par = list(),
+                          .diag = list(cex = 3),
+                          ...) {
+    if (missing(lower))
+        lower <- upper
+    if (missing(diagonal))
+        diagonal <- function (x, ...) {
+            image(matrix(1), col = 'white', bty = 'n', xaxt = 'n', yaxt = 'n')
+            text(0, 0, x, ...)
+        }
+
+    callPlot <- function (ij) {
+        i <- ij[1]
+        j <- ij[2]
+        if (i < j)
+            upper(axes[i], axes[j], ...)
+        else if (i > j)
+            lower(axes[i], axes[j], ...)
+        else
+            do.call(diagonal, c(list(axes[i]), .diag))
+    }
+
+    .par$mar <- .par$mar %else% rep(1, 4)
+    .par$mfrow <- rep(length(axes), 2)
+    oldPar <- do.call(par, .par)
+    on.exit(par(oldPar))
+
+    dots <- list(...)
+    for (name in names(dots))
+        .diag[[name]] <- .diag[[name]] %else% dots[[name]]
+
+    idx <- indices(axes)
+    apply(expand.grid(idx, idx), ROWS, callPlot)
+}
+
 preparePdf <- function (name, ...)
-    pdf(file.path('plots', 'correlation', paste(name, '.pdf', sep = '')), ...)
+    pdf(file.path('plots', 'correlation', name, ext = '.pdf'), ...)
 
 scatterPlot <- function (x, y, ...) {
     model <- lm(y ~ x)
