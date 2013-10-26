@@ -83,18 +83,17 @@ plot.colocalization <- function (x, ...) {
     Ecdf(c(x$de, x$non),
          group = c(rep('DE', length(x$de)),
                    rep('non-DE', length(x$non))),
-         main = substitute(tissue ~ paste(a, '–', b) ~
-                          (paste('ϑ' == t, ', ', italic(w) == ww)),
+         main = substitute(tissue ~ a %<->% b ~
+                          (paste(theta1 == t, ', ', italic(w) == ww)),
                            list(tissue = readable(x$tissue),
                                 a = readable(x$a),
                                 b = readable(x$b),
                                 t = x$threshold,
                                 ww = x$windowSize)),
-         #main = sprintf('%s %s–%s (ϑ = %s, w = %s)',
-         #               readable(x$tissue), readable(x$a), readable(x$b),
-         #               x$threshold, x$windowSize),
-         xlab = bquote(italic(x)), ylab = bquote('Proportion' <= italic(x)), ...)
+         xlab = bquote(italic(x)), ylab = bquote('Proportion' <= italic(x)),
+         label.curves = FALSE, subtitles = FALSE, ...)
     text(0.8, 0.1, bquote(italic(p) == .(x$test$p.value)))
+    legend('topleft', legend = c('diff. expr.', 'non diff. expr.'), bty = 'n', ...)
 }
 
 ks.test.colocalization <- function (x)
@@ -106,16 +105,40 @@ ks.test <- function (x, y)
     UseMethod('ks.test')
 
 testColocalization <- function () {
+    # Test all parameter sets.
+    stages <- list(liver = c('e15.5', 'P22'), brain = c('P4', 'P29'))
+    path <- 'plots/colocalization'
+    mkdir(path)
+    for (tissue in tissues) {
+        for (threshold in c(0.1, 0.05, 0.01)) {
+            for (windowSize in c(10000, 50000, 100000)) {
+                stage <- stages[[tissue]]
+                stat <- colocalizationForContrast(tissue, stage[1], stage[2],
+                                                  threshold, windowSize)
+                local({
+                    cond <- sprintf('%s-theta_%s-w_%s', tissue, threshold, windowSize)
+                    on.exit(dev.off())
+                    pdf(file.path(path, cond, ext = 'pdf'), family = plotFamily)
+                    plot(stat, col = colors, lwd = 3)
+                })
+            }
+        }
+    }
 }
 
 if (! interactive()) {
+    cat('# Generating colocalization analysis plots\n')
     trnaLoadData()
     trnaSetupCountDataSet()
     trnaPairwiseDiffentialExpression()
     mrnaLoadData()
     mrnaSetupCountDataSet()
     mrnaPairwiseDifferentialExpression()
+
+    testColocalization()
 }
+
+stop('The rest is obsolete and shouldn’t be run.')
 
 #' @TODO Everything below this is old, remove.
 
