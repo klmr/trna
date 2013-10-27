@@ -3,6 +3,7 @@ source('scripts/de.R')
 mrnaWriteDeGenes <- function () {
     for (tissue in tissues) {
         base <- file.path('results/de', tissue)
+        mkdir(base)
         for (a in names(mrnaDeGenes[[tissue]])) {
             contrastA <- mrnaDeGenes[[tissue]][[a]]
             for (b in names(contrastA)) {
@@ -19,6 +20,7 @@ mrnaWriteDeGenes <- function () {
 }
 
 if (! interactive()) {
+    cat('# Generating protein-coding DE gene lists\n')
     mrnaLoadData()
     mrnaSetupCountDataSet()
     mrnaPairwiseDifferentialExpression()
