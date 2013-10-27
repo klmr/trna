@@ -14,8 +14,9 @@ plotFamily <- 'Helvetica'
 
 source('plot-matrix.R')
 source('plot-pca.R')
+source('plot-pairwise.R')
+source('plot-correlations.R')
 
-# Common functions {{{
 loadAminoAcids <- function () {
     aminoAcidPath <- '../common/data/amino_acids.tsv'
     aminoAcids <<- read.table(aminoAcidPath,
@@ -38,4 +39,3 @@ readable <- function (str)
                           e18.5 = 'E18.5',
                           '[dD]o(\\d{4})' = 'DO\\1'),
           collapse = ' ')
-# }}}
