@@ -41,7 +41,7 @@ generateCodonUsageData <- function () {
         cat('Cache file not found -- re-generating codon usage data.')
 
         getCodonUsageAndReportProcess <- function (c, method) {
-            result <- codonUsage(method, mrnaNormDataCond[, c])
+            result <- codonUsage(method, mrnaNormDataCond[, c, drop = FALSE])
             cat('.')
             result
         }

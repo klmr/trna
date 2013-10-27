@@ -12,6 +12,10 @@ source('scripts/correlation.R')
 #'      (defaults to a function which just prints the labels)
 #' @param .par list of additional \link{\code{par}}ameters to set
 #' @param .diag additional parameters to pass to \code{diagonal}
+#' @param main see \link{\code{title}}
+#' @param sub see \link{\code{title}}
+#' @param xlab see \link{\code{title}}
+#' @param ylab see \link{\code{title}}
 #' @param ... remaining arguments are passed to each plot function
 #' @note The \code{upper} and \code{lower} callback function receive the
 #'  (\code{i}, \code{j}) entries of the \code{axes} corresponding to its plot.
@@ -24,7 +28,8 @@ plotPairwise <- function (axes,
                           diagonal,
                           .par = list(),
                           .diag = list(cex = 3),
-                          ...) {
+                          main = as.character(substitute(axes)),
+                          sub = '', xlab = 'x', ylab = 'y', ...) {
     if (missing(lower))
         lower <- upper
     if (missing(diagonal))
@@ -33,78 +38,87 @@ plotPairwise <- function (axes,
             text(0, 0, x, ...)
         }
 
+
     callPlot <- function (ij) {
         i <- ij[1]
         j <- ij[2]
         if (i < j)
-            upper(axes[i], axes[j], ...)
-        else if (i > j)
             lower(axes[i], axes[j], ...)
+        else if (i > j)
+            upper(axes[i], axes[j], ...)
         else
             do.call(diagonal, c(list(axes[i]), .diag))
     }
-
-    .par$mar <- .par$mar %else% rep(1, 4)
-    .par$mfrow <- rep(length(axes), 2)
-    oldPar <- do.call(par, .par)
-    on.exit(par(oldPar))
 
     dots <- list(...)
     for (name in names(dots))
         .diag[[name]] <- .diag[[name]] %else% dots[[name]]
 
-    idx <- indices(axes)
-    apply(expand.grid(idx, idx), ROWS, callPlot)
+    .par$mar <- .par$mar %else% rep(1, 4)
+    .par$oma <- .par$oma %else% c(5, 5, 5, 0)
+    .par$mfrow <- rep(length(axes), 2)
+
+    local({
+        oldPar <- do.call(par, .par)
+        on.exit(par(oldPar))
+        idx <- indices(axes)
+        apply(expand.grid(idx, idx), ROWS, callPlot)
+    })
+
+    title(main, '', xlab, ylab)
 }
 
-preparePdf <- function (name, ...)
-    pdf(file.path('plots', 'correlation', name, ext = '.pdf'), ...)
+plotCorrelationsFor <- function (data, main = as.character(substitute(data))) {
+    plotter <- function (tissue)
+        function (i, j, ...) {
+            cols <- sapply(c(i, j), p(grep, colnames(data)) %.%
+                           lp(paste, tissue, sep = '-'))
+            plotSampleIdx <- if (useSample)
+                sample.int(nrow(data), 2000) else 1 : nrow(data)
+            plotSample <- data[plotSampleIdx, cols]
 
-scatterPlot <- function (x, y, ...) {
-    model <- lm(y ~ x)
-    rho <- cor(x, y, method = 'spearman')
-    points(x, y, ...)
-    text(max(x), min(y),
-         substitute(paste(rho, '=', r),
-                    list(r = sprintf('%0.2f', rho))),
-         adj = c(1, 0))
-    #abline(0, 1, lty = 3)
-    abline(model, lty = 2)
+            col <- (if (useSample) p(transparent, 0.05) else id)(tissueColor[tissue])
+            plot(plotSample, col = col, pch = 20, cex = 0.5,
+                 log = if (useSample) 'xy' else '',
+                 bty = 'n', xlab = '', ylab = '')
+
+            par(xlog = FALSE, ylog = FALSE, usr = c(0, 1, 0, 1))
+            rho <- cor(data[, cols[1]], data[, cols[2]], method = 'spearman')
+            text(0.5, 0.5, sprintf('%0.2f', rho), cex = 1.5)
+        }
+
+    diagonal <- function (stage, ...) {
+        image(matrix(1), col = 'white', bty = 'n', xaxt = 'n', yaxt = 'n')
+        text(0, 0, readable(stage), cex = 2, font = 2)
+    }
+
+    #' Sample if > 2000 data points.
+    useSample <- nrow(data) > 2000
+
+    axislabel <- sprintf(if (useSample) 'log(%s)' else '%s', 'Gene expression')
+    plotPairwise(stages, plotter('liver'), plotter('brain'), diagonal,
+                 main = main, xlab = axislabel, ylab = axislabel)
+}
+
+plotRnaCorrelation <- function () {
+    methods <- list(gene = mrnaNormDataCond,
+                    codon = codonUsageData,
+                    aa = aaUsageData)
+    titles <- list(gene = 'Protein-coding gene expression correlation',
+                   codon = 'Codon usage correlation',
+                   aa = 'Amino acid usage correlation')
+    generateCorrelationPlot <- function (name, data, title) {
+        on.exit(dev.off())
+        pdf(file.path('plots', 'correlation',
+                      sprintf('%s-usage', name), ext = 'pdf'))
+        plotCorrelationsFor(data, title)
+    }
+
+    invisible(mapply(generateCorrelationPlot, names(methods), methods, titles))
 }
 
 writeCodonUsageData <- function()
     write.table(codonUsageData, file = 'results/codon-usage.dat')
-
-plotCorrelationMatrix <- function () {
-    methods <- list(codon = codonUsageData, aa = aaUsageData)
-
-    for (method in names(methods)) {
-        data <- methods[[method]]
-        preparePdf(sprintf('%s-usage', method), width = 8, height = 8)
-        tissueScatterPlot <- function (t)
-            function (x, y) {
-                rows <- merged$Tissue == t
-                scatterPlot(x[rows], y[rows],
-                            cex = 0.8, pch = 16,
-                            col = transparent(tissueColor[t]))
-            }
-
-        idx <- lapply(tissues, partial(grep, colnames(data)))
-        only <- lapply(lapply(idx, function (i) data[, i]),
-                       function(x) `colnames<-`(x, stages))
-        # Create data set usable with `pairs` to plot different rows for top
-        # and bottom half of matrix.
-        merged <- do.call(rbind, only)
-        merged$Tissue <- rep(tissues, each = nrow(data))
-
-        pairs(merged[, -ncol(merged)],
-              upper.panel = tissueScatterPlot('brain'),
-              lower.panel = tissueScatterPlot('liver'))
-        legend(0.38, 1.07 , legend = names(tissueColor), fill = tissueColor,
-               border = NA, ncol = 2, xpd = NA, bty = 'n')
-        dev.off()
-    }
-}
 
 plotSpiderWeb <- function () {
     relativeData <- function (data) {
@@ -166,9 +180,9 @@ if (! interactive()) {
 
     writeCodonUsageData()
 
-    cat('# Generating mRNA expression correlation plots\n')
+    cat('# Generating mRNA expression & usage correlation plots\n')
     mkdir('plots/correlation')
-    plotCorrelationMatrix()
+    plotRnaCorrelation()
 
     cat('# Generating mRNA codon usage plots\n')
     mkdir('plots/usage')
