@@ -41,6 +41,9 @@ trnaLoadData <- function () {
         }
     }
 
+    # Ensure corresponding order.
+    trnaRawCounts <- trnaRawCounts[rownames(trnaAnnotation), ]
+
     trnaMapping <<- trnaMapping
 
     # Filter out unexpressed tRNAs

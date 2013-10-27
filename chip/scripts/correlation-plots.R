@@ -211,19 +211,19 @@ plotAminAcidsByStage <- function () {
     }
 }
 
-# FIXME This function requires a horrible data format. This can be fixed (only)
-# by creating manual plots (after `par(mfrow(...))`) instead of using `pairs`.
-plotConservation <- function (data, colf) {
-    pointsTissue <- function (t, colf)
-        function (x, y)
-            pointSpread(x[data$type == t], y[data$type == t],
-                        cex = 0.8, pch = 16, col = colf(tissueColor[t]))
-    pairs(data[, -ncol(data)],
-          upper.panel = pointsTissue('brain', colf),
-          lower.panel = pointsTissue('liver', colf),
-          main = ' ')
-    legend(0.38, 1.05 , legend = names(tissueColor), fill = tissueColor,
-           border = NA, ncol = 2, xpd = NA, bty = 'n')
+plotChipCorrelation <- function () {
+    methods <- list(gene = trnaNormDataCond,
+                    acceptor = trnaByAcceptor)
+    titles <- list(gene = 'tRNA gene expression correlation',
+                   acceptor = 'tRNA isoacceptor family correlation')
+    generateCorrelationPlot <- function (name, data, title) {
+        on.exit(dev.off())
+        pdf(file.path('plots', 'correlation',
+                      sprintf('%s-usage', name), ext = 'pdf'))
+        plotCorrelationsFor(data, title)
+    }
+
+    invisible(mapply(generateCorrelationPlot, names(methods), methods, titles))
 }
 
 if (! interactive()) {
@@ -234,14 +234,7 @@ if (! interactive()) {
     trnaGroupFamilyAndType()
 
     mkdir('plots/correlation')
-
-    preparePdf('gene-usage', width = 8, height = 8)
-    plotConservation(trnaStageCount, transparent)
-    dev.off()
-
-    preparePdf('acceptor-usage', width = 8, height = 8)
-    plotConservation(trnaByAcceptor, id)
-    dev.off()
+    plotChipCorrelation()
 
     loadAminoAcids()
     loadGeneticCode()
