@@ -11,9 +11,9 @@ mrnaWriteDeGenes <- function () {
                     cat('Nothing for', tissue, a, b, '\n')
                     next
                 }
-                write.table(contrastA[[b]], sep = '\t', quote = FALSE,
-                            file = file.path(base, sprintf('%s-%s', a, b),
-                                             ext = 'tsv'))
+                write.table(contrastA[[b]],
+                            file.path(base, sprintf('%s-%s', a, b), ext = 'tsv'),
+                            col.names = NA, sep = '\t', quote = FALSE)
             }
         }
     }
