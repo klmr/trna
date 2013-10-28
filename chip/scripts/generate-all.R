@@ -1,5 +1,6 @@
 source('scripts/de-gene-lists.R')
 source('scripts/de-histograms.R')
+source('scripts/de-plots.R')
 source('scripts/pca.R')
 source('scripts/replicate-variability.R')
 source('scripts/write-annotation.R')
