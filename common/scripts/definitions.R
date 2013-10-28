@@ -7,6 +7,9 @@ stages <- c('e15.5', 'e18.5', 'P0.5', 'P4', 'P22', 'P29')
 names(stages) <- stages
 
 colors <- brewer.pal(8, 'Dark2')
+
+fullBrewer <- function (name) brewer.pal(brewer.pal.info[name, 'maxcolors'], name)
+contrastColors <- colorRampPalette(fullBrewer('PRGn'))(30)
 # !!! The order of these colours is important, must reflect `tissues`.
 tissueColor <- c(liver = '#D01B24', brain = '#E6AB02')
 

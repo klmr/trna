@@ -1,16 +1,14 @@
 source('../common/scripts/basic.R')
 source('scripts/load-data.R')
 
-createPlots <- function () {
+trnaPcaCreatePlots <- function () {
     correlated <- -cor(trnaNormData, method = 'spearman')
     trnaPC <- prcomp(correlated)
 
-    #heatmapLab <- sprintf('%s %s', trnaMapping[, 'Tissue'], trnaMapping[, 'Stage'])
-    heatmapLab <- gsub('_', '-', trnaMapping[colnames(trnaNormData), 'Condition'])
-    #heatmapLab <- sprintf('%s (%s %s)', rownames(trnaMapping),
-    #                      trnaMapping[, 'Tissue'], trnaMapping[, 'Stage'])
+    heatmapLab <- sapply(trnaMapping[colnames(trnaNormData), 'Condition'], readable)
     pdf(file.path(output, 'trna-heatmap.pdf'), width = 6, height = 6, family = plotFamily)
-    heatmap(correlated, symm = TRUE, labRow = heatmapLab, labCol = heatmapLab)
+    heatmap(correlated, symm = TRUE, labRow = heatmapLab, labCol = heatmapLab,
+            col = contrastColors)
     dev.off()
 
     pdf(file.path(output, 'trna-pca.pdf'), width = 6, height = 6, family = plotFamily)
@@ -27,5 +25,5 @@ if (! interactive()) {
 
     output <- 'plots/distribution'
     mkdir(output)
-    createPlots()
+    trnaPcaCreatePlots()
 }
