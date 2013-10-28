@@ -8,7 +8,7 @@ plotCorrelationsFor <- function (data, main = as.character(substitute(data))) {
                 sample.int(nrow(data), 2000) else 1 : nrow(data)
             plotSample <- data[plotSampleIdx, cols]
 
-            plot(plotSample, col = col[tissue], pch = 20, cex = 0.5,
+            plot(plotSample, col = col[tissue], pch = 16, cex = 0.5,
                  log = if (useSample) 'xy' else '',
                  bty = 'n', xlab = '', ylab = '')
 
@@ -26,7 +26,7 @@ plotCorrelationsFor <- function (data, main = as.character(substitute(data))) {
     useSample <- nrow(data) > 2000
     col <- (if (nrow(data) > 200) {
             opacity <- max(200 / nrow(data), 0.05)
-            p(transparent, 0.05)
+            p(transparent, opacity)
         } else id)(tissueColor)
     names(col) <- names(tissueColor)
 
