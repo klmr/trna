@@ -71,7 +71,7 @@ plotCodonsByType <- function () {
 
     for (tissue in tissues) {
         pdf(sprintf('plots/usage/codons-%s.pdf', tissue),
-            width = 6, height = 4, family = plotFamily)
+            width = 8, height = 3.5, family = plotFamily)
 
         for (aa in aminoAcids$Short) {
             codons <- rownames(subset(geneticCode, AA == aa))
@@ -112,12 +112,19 @@ plotCodonsByType <- function () {
             mrna <- `colnames<-`(mrna[, colim], stages)
             trna <- `colnames<-`(trna[, colit], stages)
 
-            toNearest <- function (x, step)
-                round(x + step, -log10(step))
-
-            lim <- c(0, toNearest(max(max(trna), max(mrna)), 0.1))
-            plotRadial(trna, mrna, codons, sprintf('Codon usage for %s', long),
-                       radial.lim = lim)
+            local({
+                oldPar <- par(mfrow = c(1,2), lty = 0)
+                on.exit(par(oldPar))
+                mapply(function (data, title) {
+                        barplot(data, horiz = TRUE, col = colors, axes = FALSE,
+                                xlab = sprintf('Proportion of %s', title),
+                                las = 1, names.arg = readable(stages))
+                        axis(1, 0 : 4 / 4, sprintf('%d%%', 0 : 4 * 25), cex.axis = 0.75)
+                    },
+                    list(trna, mrna),
+                    c('isoacceptor occupancy', 'codon usage'))
+            })
+            title(main=sprintf('Codon usage for %s', long))
         }
 
         dev.off()
