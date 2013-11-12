@@ -50,11 +50,9 @@ colocalizationForContrast <- function (tissue, a, b, threshold, windowSize) {
     trna <- prepare(trnaDeResults, trnaAnnotation)
     mrna <- prepare(mrnaDeResults, mrnaAnnotation)
 
-    nearDe <- list(de = c(adply(trna$up, ROWS, countInNeighborhood, mrna$up)$V1,
-                          adply(trna$down, ROWS, countInNeighborhood, mrna$down)$V1),
-                   bg = c(adply(trna$up, ROWS, countInNeighborhood, mrna$all)$V1,
-                          adply(trna$down, ROWS, countInNeighborhood, mrna$all)$V1))
-    nearNonDe <- list(de = adply(trna$no, ROWS, countInNeighborhood, mrna$de)$V1,
+    nearDe <- list(de = adply(trna$up, ROWS, countInNeighborhood, mrna$up)$V1,
+                   bg = adply(trna$up, ROWS, countInNeighborhood, mrna$all)$V1)
+    nearNonDe <- list(de = adply(trna$no, ROWS, countInNeighborhood, mrna$up)$V1,
                       bg = adply(trna$no, ROWS, countInNeighborhood, mrna$all)$V1)
 
     nearDe$ratio <- nearDe$de / nearDe$bg

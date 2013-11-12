@@ -122,7 +122,7 @@ plotCodonsByType <- function () {
                         axis(1, 0 : 4 / 4, sprintf('%d%%', 0 : 4 * 25), cex.axis = 0.75)
                     },
                     list(trna, mrna),
-                    c('isoacceptor occupancy', 'codon usage'))
+                    c('tRNA isoacceptor occupancy', 'mRNA codon usage'))
             })
             title(main=sprintf('Codon usage for %s', long))
         }
