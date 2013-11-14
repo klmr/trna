@@ -1,15 +1,9 @@
 plotCountMatrix <- function (counts, main) {
     maxval <- lapply(counts, partial(max, na.rm = TRUE))
-    hsvliver <- rgb2hsv(col2rgb(gray.colors(maxval$liver + 1, start = 0.95, end = 0.3)))
-    hsvbrain <- rgb2hsv(col2rgb(gray.colors(maxval$brain + 1, start = 0.95, end = 0.3)))
-
-    # We want white--red so we ramp saturation with the inverse of value and leave hue (0 = red).
-    hsvliver['s', ] <- 1 - hsvliver['v', ]
-    hsvliver['v', ] <- 1
-    hsvbrain['s', ] <- 1 - hsvbrain['v', ]
-    hsvbrain['h', ] <- 0.13 # Orange-brown-yellowish
-    hsvbrain['v', ] <- 0.95
-    colors <- list(liver = hsv2col(hsvliver), brain = hsv2col(hsvbrain))
+    gradient <- function (tissue)
+        colorRampPalette(c('white', tissueColor[tissue]),
+                         interpolate = 'spline')(maxval[[tissue]] + 1)
+    colors <- sapply(tissues, gradient)
 
     w <- nrow(counts[[1]])
     par(mfrow = c(w, w), mar = rep(0, 4), oma = c(1, 1, 4, 10))
@@ -21,9 +15,11 @@ plotCountMatrix <- function (counts, main) {
             rect(par('usr')[1], par('usr')[3], par('usr')[2], par('usr')[4],
                  col = colors[[tissue]][value + 1], border = NA)
             if (i == j)
-                text(0.5, 0.5, labels = colnames(counts[[tissue]])[i], cex = 2)
+                text(0.5, 0.5,
+                     labels = readable(colnames(counts[[tissue]])[i]),
+                     cex = 2, font = 2)
             else
-                text(0.5, 0.5, labels = value, cex = 1.5)
+                text(0.5, 0.5, labels = value, cex = 2)
         }
     }
 
