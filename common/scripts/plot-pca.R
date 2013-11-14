@@ -22,7 +22,7 @@ plotProgression <- function (data, dim1, dim2, values1, values2, mapping, main, 
     variance <- summary(data)$importance['Proportion of Variance', ]
     axisLab <- '%s (%2.0f%% variance explained)'
 
-    par(bty = 'n', xpd = TRUE)
+    par(bty = 'n', xpd = TRUE, las = 1)
     plot(data$rotation[, 1], data$rotation[, 2],
          xlab = sprintf(axisLab, 'PC1', variance[1] * 100),
          ylab = sprintf(axisLab, 'PC2', variance[2] * 100),
@@ -31,8 +31,8 @@ plotProgression <- function (data, dim1, dim2, values1, values2, mapping, main, 
          cex = 1.2,
          main = main)
     text(data$rotation[, 1], data$rotation[, 2],
-         adj = c(-0.5, 0.5), cex = 0.6,
-         labels = as.character(mapping[rownames(data$rotation), dim2]))
+         adj = c(-0.5, 0.5),
+         labels = readable(as.character(mapping[rownames(data$rotation), dim2])))
 
     if (legend) {
         graphics::legend('topright', legend = readable(values1),
