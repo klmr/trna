@@ -34,7 +34,8 @@ plotSpiderWeb <- function () {
         radial.plot(data, labels = labels, main = main, line.col = colors,
                     lwd = 2, show.grid.labels = 3, ...)
         plot.new()
-        legend('center', legend = stages, fill = colors, border = NA, bty = 'n', xpd = NA)
+        legend('center', legend = readable(stages), fill = colors, border = NA,
+               bty = 'n', xpd = NA)
     }
 
     isotypeData <- groupby(trnaNormDataCond, trnaAnnotation$Type)
@@ -66,7 +67,8 @@ plotCodonsByType <- function () {
         radial.plot(mrna, labels = labels, line.col = colors, lwd = 2,
                     show.grid.labels = 3, main = 'mRNA codon usage', ...)
         plot.new()
-        legend('center', legend = stages, fill = colors, border = NA, bty = 'n', xpd = NA)
+        legend('center', legend = readable(stages), fill = colors, border = NA,
+               bty = 'n', xpd = NA)
     }
 
     for (tissue in tissues) {
