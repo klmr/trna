@@ -55,22 +55,6 @@ plotSpiderWeb <- function () {
 }
 
 plotCodonsByType <- function () {
-    plotRadial <- function (trna, mrna, labels, main, ...) {
-        par(mar = rep(0, 4))
-        layout(matrix(c(1, 1, 1, 2, 3, 4), 2, 3, byrow = TRUE),
-               widths = c(0.4, 0.4, 0.1),
-               heights = c(0.15, 0.9))
-        plot.new()
-        text(0.5, 0.5, labels = main, cex = 3)
-        radial.plot(trna, labels = labels, line.col = colors, lwd = 2,
-                    show.grid.labels = 3, main = 'tRNA occupancy', ...)
-        radial.plot(mrna, labels = labels, line.col = colors, lwd = 2,
-                    show.grid.labels = 3, main = 'mRNA codon usage', ...)
-        plot.new()
-        legend('center', legend = readable(stages), fill = colors, border = NA,
-               bty = 'n', xpd = NA)
-    }
-
     for (tissue in tissues) {
         pdf(sprintf('plots/usage/codons-%s.pdf', tissue),
             width = 8, height = 3.5, family = plotFamily)
@@ -115,18 +99,35 @@ plotCodonsByType <- function () {
             trna <- `colnames<-`(trna[, colit], stages)
 
             local({
-                oldPar <- par(mfrow = c(1,2), lty = 0)
+                oldPar <- par(mfrow = c(1,2), lty = 0, xpd = TRUE)
                 on.exit(par(oldPar))
                 mapply(function (data, title) {
                         barplot(data, horiz = TRUE, col = colors, axes = FALSE,
                                 xlab = sprintf('Proportion of %s', title),
                                 las = 1, names.arg = readable(stages))
                         axis(1, 0 : 4 / 4, sprintf('%d%%', 0 : 4 * 25), cex.axis = 0.75)
+                        legendPos <- data[, ncol(data)]
+                        legendCol <- colors[legendPos != 0]
+                        legendPos <- cumsum(legendPos[legendPos != 0])
+                        legend <- names(legendPos)
+                        legendPos <- c(0, legendPos[-length(legendPos)])
+
+                        par(usr = c(0, 1, 0, 1))
+
+                        # Adjust label positions so they don’t overlap.
+                        legendWidths <- strwidth(legend)
+                        if (length(legend) > 1)
+                            for (i in 1 : (length(legend) - 1))
+                                if (legendPos[i] + legendWidths[i] > legendPos[i + 1])
+                                    legendPos[i + 1] <- legendPos[i] + legendWidths[i]
+
+                        text(legendPos, 1, legend, pos = 4, col = legendCol,
+                             cex = 0.75, offset = 0.1)
                     },
                     list(trna, mrna),
                     c('tRNA isoacceptor occupancy', 'mRNA codon usage'))
             })
-            title(main=sprintf('Codon usage for %s', long))
+            title(main = sprintf('Codon usage for %s', long), xpd = NA)
         }
 
         dev.off()
