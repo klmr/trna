@@ -178,7 +178,8 @@ plotCodonsByStage <- function () {
                  ylab = 'Proportion of mRNA codon usage',
                  main = sprintf('Codons in %s %s', readable(stage), readable(tissue)),
                  xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
-                 col = ifelse(data$trna == 0, colors[1], last(colors)), pch = 20, las = 1)
+                 col = ifelse(data$trna == 0, last(colors), tissueColor[tissue]),
+                 pch = 20, las = 1)
             cd <- data[data$trna != 0, ]
             model <- lm(mrna ~ trna, cd)
             abline(model)
@@ -214,7 +215,7 @@ plotAminAcidsByStage <- function () {
                  ylab = 'Proportion of mRNA amino acid usage',
                  main = sprintf('Amino acids in %s %s', readable(stage), readable(tissue)),
                  xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
-                 pch = 20, las = 1)
+                 pch = 20, las = 1, col = tissueColor[tissue])
             model <- lm(mrna ~ trna, data)
             ci <- predict(model, interval = 'confidence', level = 0.99)
             ciHigh <- sort(ci[, 'upr'])
