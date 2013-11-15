@@ -146,6 +146,18 @@ columnsForCondition <- function (trna, mrna, tissue, stage) {
                mrna = mrna[, cols[, 2]])
 }
 
+findPlotMaxima <- function (trna, mrna) {
+    maxima <- list()
+
+    # Determine maxima to unify all axis limits. Messy
+    for (tissue in tissues)
+        for (stage in stages)
+            maxima[[length(maxima) + 1]] <-
+                apply(columnsForCondition(trna, mrna, tissue, stage), COLS, max)
+
+    apply(do.call(rbind, maxima), COLS, max) * 1.05
+}
+
 plotCodonsByStage <- function () {
     trnaCodons <- groupby(trnaNormDataCond, trnaAnnotation[rownames(trnaNormDataCond), 'Acceptor'])
     rownames(trnaCodons) <- revcomp(rownames(trnaCodons))
@@ -154,6 +166,7 @@ plotCodonsByStage <- function () {
     # Ensure same row order.
     trna <- relativeData(trnaCodons[rownames(codonUsageData), ])
     mrna <- relativeData(codonUsageData)
+    maxima <- findPlotMaxima(trna, mrna)
 
     par(mfrow = c(4, 3))
 
@@ -163,10 +176,11 @@ plotCodonsByStage <- function () {
             plot(data$trna, data$mrna,
                  xlab = 'Proportion of tRNA isoacceptors',
                  ylab = 'Proportion of mRNA codon usage',
-                 main = sprintf('Codons in %s %s', stage, tissue),
-                 col = ifelse(data$trna == 0, 'red', 'black'), pch = 20)
+                 main = sprintf('Codons in %s %s', readable(stage), readable(tissue)),
+                 xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
+                 col = ifelse(data$trna == 0, last(colors), tissueColor[tissue]),
+                 pch = 20, las = 1)
             cd <- data[data$trna != 0, ]
-            #cd <- data
             model <- lm(mrna ~ trna, cd)
             abline(model)
             par(usr = c(0, 1, 0, 1))
@@ -189,6 +203,7 @@ plotAminAcidsByStage <- function () {
     # Ensure same row order.
     trna <- relativeData(trnaTypeUsage[aminoAcids$Long, ])
     mrna <- relativeData(mrnaTypeUsage[aminoAcids$Long, ])
+    maxima <- findPlotMaxima(trna, mrna)
 
     par(mfrow = c(4, 3))
 
@@ -198,8 +213,9 @@ plotAminAcidsByStage <- function () {
             plot(data$trna, data$mrna,
                  xlab = 'Proportion of tRNA isotypes',
                  ylab = 'Proportion of mRNA amino acid usage',
-                 main = sprintf('Amino acids in %s %s', stage, tissue),
-                 pch = 20)
+                 main = sprintf('Amino acids in %s %s', readable(stage), readable(tissue)),
+                 xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
+                 pch = 20, las = 1, col = tissueColor[tissue])
             model <- lm(mrna ~ trna, data)
             ci <- predict(model, interval = 'confidence', level = 0.99)
             ciHigh <- sort(ci[, 'upr'])
@@ -253,10 +269,14 @@ if (! interactive()) {
 
     generateCodonUsageData()
     plotCodonsByType()
-    pdf('plots/usage/codon-scatter.pdf', width = 7, height = 10, family = plotFamily)
-    plotCodonsByStage()
-    dev.off()
-    pdf('plots/usage/amino-acid-scatter.pdf', width = 7, height = 10, family = plotFamily)
-    plotAminAcidsByStage()
-    dev.off()
+    local({
+        on.exit(dev.off())
+        pdf('plots/usage/codon-scatter.pdf', width = 7, height = 10, family = plotFamily)
+        plotCodonsByStage()
+    })
+    local({
+        on.exit(dev.off())
+        pdf('plots/usage/amino-acid-scatter.pdf', width = 7, height = 10, family = plotFamily)
+        plotAminAcidsByStage()
+    })
 }
