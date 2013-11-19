@@ -7,8 +7,8 @@ local({
 })
 
 trnaGroupFamilyAndType <- function () {
-    trnaByAcceptor <<- groupby(trnaNormDataCond, trnaAnnotation$Acceptor, mean)
-    trnaByType <<- groupby(trnaNormDataCond, trnaAnnotation$Type, mean)
+    trnaByAcceptor <<- groupby(trnaNormDataCond, trnaAnnotation$Acceptor, sum)
+    trnaByType <<- groupby(trnaNormDataCond, trnaAnnotation$Type, sum)
 }
 
 relativeData <- function (data) {
