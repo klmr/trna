@@ -38,9 +38,8 @@ plotSpiderWeb <- function () {
                bty = 'n', xpd = NA)
     }
 
-    isotypeData <- groupby(trnaNormDataCond, trnaAnnotation$Type)
     # Enforce uniform order between tRNA and mRNA plots.
-    isotypeData <- isotypeData[aminoAcids$Long, ]
+    isotypeData <- trnaByType[aminoAcids$Long, ]
 
     for (tissue in tissues) {
         data <- isotypeData[, grep(tissue, colnames(isotypeData))]
@@ -239,9 +238,11 @@ plotAminAcidsByStage <- function () {
 
 plotChipCorrelation <- function () {
     methods <- list(gene = trnaNormDataCond,
-                    acceptor = trnaByAcceptor)
+                    acceptor = trnaByAcceptor,
+                    type = trnaByType)
     titles <- list(gene = 'tRNA gene expression correlation',
-                   acceptor = 'tRNA isoacceptor family correlation')
+                   acceptor = 'tRNA isoacceptor family correlation',
+                   type = 'tRNA isotype correlation')
     generateCorrelationPlot <- function (name, data, title) {
         on.exit(dev.off())
         pdf(file.path('plots', 'correlation',
