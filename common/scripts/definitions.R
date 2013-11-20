@@ -1,17 +1,13 @@
-library(RColorBrewer)
-
 source('../../../scripts/basic.R', chdir = TRUE)
 
 tissues <- c(liver = 'liver', brain = 'brain')
 stages <- c('e15.5', 'e18.5', 'P0.5', 'P4', 'P22', 'P29')
 names(stages) <- stages
 
-fullBrewer <- function (name) brewer.pal(brewer.pal.info[name, 'maxcolors'], name)
-
 colors <- c("#597CCB", "#3D8E11", "#7C0D0C", "#C47E1F", "#603D71", "#CE4A92", "#A4B962")
 colors <- c(colors, grey = '#4C4C4C')
 
-contrastColors <- colorRampPalette(fullBrewer('PRGn'))(30)
+contrastColors <- colorRampPalette(c(colors[5], 'white', colors[7]))(30)
 # !!! The order of these colours is important, must reflect `tissues`.
 tissueColor <- c(liver = colors[3], brain = colors[4])[tissues]
 
