@@ -1,20 +1,5 @@
 source('scripts/correlation.R')
 
-# TODO Redundant definition, consolidate in common helper file.
-preparePdf <- function (name, ...)
-    pdf(file.path('plots/correlation', name, ext = '.pdf'), family = plotFamily, ...)
-
-pointSpread <- function (x, y, ...) {
-    points(x, y, ...)
-    linm <- lm(y ~ x)
-    rho <- cor(x, y, method = 'spearman')
-    text(max(x), min(y), bquote(rho == .(sprintf('%.2f', rho))), adj = c(1, 0))
-    #abline(0, 1, lty = 3)
-    abline(linm, lty = 2)
-}
-
-ps <- partial(pointSpread, cex = 0.8, pch = 16, col = transparent(colors[1]))
-
 # Override radial.plot options
 
 radial.plot <- function (data, ...) {
@@ -229,8 +214,11 @@ plotAminAcidsByStage <- function () {
             par(usr = c(0, 1, 0, 1))
             rho <- cor(data$trna, data$mrna, method = 'spearman')
             r2 <- cor(data$trna, data$mrna, method = 'pearson')
-            text(1, 0, bquote(atop(' ' ~ rho == .(sprintf('%.2f', rho)),
-                                   R^2 == .(sprintf('%.2f', r2)))),
+            prho <- cor.test(data$trna, data$mrna, method = 'spearman')$p.value
+            pr2 <- cor.test(data$trna, data$mrna, method = 'pearson')$p.value
+            message('prho=', prho, ' pr2=', pr2)
+            text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
+                                   italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
                  adj = c(1.1, -0.1))
         }
     }
