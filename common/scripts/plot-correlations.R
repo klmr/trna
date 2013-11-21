@@ -9,8 +9,13 @@ plotCorrelationsFor <- function (data, main = as.character(substitute(data))) {
             plotSample <- data[plotSampleIdx, cols]
 
             plot(plotSample, col = col[tissue], pch = 16, cex = 0.5,
-                 log = if (useSample) 'xy' else '',
-                 bty = 'n', xlab = '', ylab = '')
+                 log = if (useSample) 'xy' else '', axes = FALSE,
+                 bty = 'n', xlab = '', ylab = '', xlim = lablim, ylim = lablim)
+
+            if (j == stages[1]) axis(3)
+            if (j == last(stages)) axis(1)
+            if (i == stages[1]) axis(2, las = 1)
+            if (i == last(stages)) axis(4, las = 1)
 
             par(xlog = FALSE, ylog = FALSE, usr = c(0, 1, 0, 1))
             rho <- cor(data[, cols[1]], data[, cols[2]], method = 'spearman')
@@ -29,6 +34,9 @@ plotCorrelationsFor <- function (data, main = as.character(substitute(data))) {
             p(transparent, opacity)
         } else id)(tissueColor)
     names(col) <- names(tissueColor)
+
+    # Use uniform axis limits.
+    lablim <- c(0, max(unlist(data)))
 
     axislabel <- sprintf(if (useSample) 'log(%s)' else '%s', 'Gene expression')
     plotPairwise(stages, plotter('liver'), plotter('brain'), diagonal,
