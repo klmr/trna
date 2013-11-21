@@ -1,14 +1,17 @@
 source('../common/scripts/basic.R')
 source('scripts/load-data.R')
 
+library(gplots)
+
 trnaPcaCreatePlots <- function () {
-    correlated <- -cor(trnaNormData, method = 'spearman')
-    trnaPC <- prcomp(correlated)
+    correlated <- cor(trnaNormData, method = 'spearman')
+    trnaPC <- prcomp(-correlated)
 
     heatmapLab <- sapply(trnaMapping[colnames(trnaNormData), 'Condition'], readable)
     pdf(file.path(output, 'trna-heatmap.pdf'), width = 6, height = 6, family = plotFamily)
-    heatmap(correlated, symm = TRUE, labRow = heatmapLab, labCol = heatmapLab,
-            col = contrastColors)
+    heatmap.2(correlated, symm = TRUE, Colv = TRUE, labRow = heatmapLab,
+              labCol = heatmapLab, col = contrastColors, trace = 'none',
+              density.info = 'none')
     dev.off()
 
     pdf(file.path(output, 'trna-pca.pdf'), width = 6, height = 6, family = plotFamily)

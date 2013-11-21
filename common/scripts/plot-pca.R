@@ -20,7 +20,10 @@ plotProgression <- function (data, dim1, dim2, values1, values2, mapping, main, 
                [grep(mapping[id, dim2], values2)], '')
 
     variance <- summary(data)$importance['Proportion of Variance', ]
-    axisLab <- '%s (%2.0f%% variance explained)'
+    axisLab <- '%s (%.0f%% variance explained)'
+
+    lim <- sapply(1:2, function (p) c(min(data$rotation[, p]),
+                                      max(data$rotation[, p])) * 1.5)
 
     par(bty = 'n', xpd = TRUE, las = 1)
     plot(data$rotation[, 1], data$rotation[, 2],
@@ -28,7 +31,7 @@ plotProgression <- function (data, dim1, dim2, values1, values2, mapping, main, 
          ylab = sprintf(axisLab, 'PC2', variance[2] * 100),
          col = colStage(rownames(data$rotation)),
          pch = pchCluster(rownames(data$rotation)),
-         cex = 1.2,
+         cex = 1.2, xlim = lim[, 1], ylim = lim[, 2],
          main = main)
     text(data$rotation[, 1], data$rotation[, 2],
          adj = c(-0.5, 0.5),
