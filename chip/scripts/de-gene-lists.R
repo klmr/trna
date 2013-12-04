@@ -1,13 +1,12 @@
 source('scripts/de.R')
 
-writeAllGeneLists <- function () {
-    writeContrast <- function (contrast, name)
-        write.table(contrast[order(contrast$padj), ],
-                    sprintf('results/de-genes/%s.tsv', sub('/', '-vs-', name)),
-                    quote = FALSE, sep = '\t', col.names = NA)
+writeContrast <- function (type, contrast, name)
+    write.table(contrast[order(contrast$padj), ],
+                sprintf('results/de-%s/%s.tsv', type, sub('/', '-vs-', name)),
+                quote = FALSE, sep = '\t', col.names = NA)
 
-    invisible(mapply(writeContrast, trnaDeGenes, names(trnaDeGenes)))
-}
+writeAllGeneLists <- function ()
+    invisible(mapply(lp(writeContrast, 'genes'), trnaDeGenes, names(trnaDeGenes)))
 
 if (! interactive()) {
     cat('# Generating gene list files\n')
