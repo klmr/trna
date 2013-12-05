@@ -43,6 +43,26 @@ trnaPairwiseDiffentialExpression <- function () {
     trnaDeCounts <<- results$counts
 }
 
+trnaDetailedDe <- function () {
+    if (exists('trnaAccDe'))
+        return()
+
+    dispEst <- c(Acceptor = estimateDispersions,
+                 Type = p(estimateDispersions, fitType = 'local'))
+
+    getCds <- function (x)
+        groupby(trnaRawCounts, trnaAnnotation[[x]]) %|%
+        p(newCountDataSet, trnaMapping$Condition) %|%
+        estimateSizeFactors %|% dispEst[[x]]
+
+    on.exit(assign('lp', lpartial, globalenv()))
+    rm(lp, envir = environment(lp))
+    cds <- sapply(c('Acceptor', 'Type'), getCds)
+
+    trnaAccDe <<- pairwiseDifferentialExpression(cds$Acceptor, 0.05)
+    trnaTypeDe <<- pairwiseDifferentialExpression(cds$Type, 0.05)
+}
+
 trnaTissueDifferentialExpression <- function () {
     if (exists('trnaTissueDeGenes'))
         return()
