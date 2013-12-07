@@ -1,4 +1,4 @@
-source('scripts/correlation.R')
+source('scripts/usage.R')
 
 plotRnaCorrelation <- function () {
     methods <- list(gene = mrnaNormDataCond,
