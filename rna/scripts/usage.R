@@ -63,6 +63,41 @@ generateCodonUsageData <- function () {
     aaUsageData <<- usageData[[2]]
 }
 
+generateStableCodonUsageData <- function () {
+    # “Stable” codon usage reflects the codon usage not of all genes, but
+    # instead only considers highly expressed genes in a given tissue.
+    # This is an attempt to smooth out high variance predominantly observed in
+    # lowly expressed genes.
+    # Conversely, we also exclude the very highly expressed genes in order to
+    # de-emphasise extreme outliers in the data. To achieve this, we use the
+    # data between the 90th and 95th quantile.
+
+    conditions <- unique(mrnaMapping$Condition)
+
+    cat('Generating stable codon usage data for.')
+
+    getCodonUsageAndReportProcess <- function (c, method) {
+        range <- quantile(mrnaNormDataCond[, c], c(0.9, 0.95))
+        data <- mrnaNormDataCond[, c, drop = FALSE]
+        data <- data[data >= range[1] & data <= range[2], , drop = FALSE]
+        on.exit(cat('.'))
+        codonUsage(method, data)
+    }
+
+    getCodonDataFrame <- function (method)
+        as.data.frame(lapply(conditions, getCodonUsageAndReportProcess,
+                             method = method))
+
+    usageData <- lapply(c('codon', 'aa'), getCodonDataFrame)
+    for (i in indices(usageData))
+        colnames(usageData[[i]]) <- conditions
+
+    cat('done\n')
+
+    stableCodonUsageData <<- usageData[[1]]
+    stableAaUsageData <<- usageData[[2]]
+}
+
 generateCodonBackgroundDist <- function () {
     if (exists('codonBackgroundDist'))
         return()
