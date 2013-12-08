@@ -41,9 +41,8 @@ generateCodonUsageData <- function () {
         cat('Cache file not found -- re-generating codon usage data.')
 
         getCodonUsageAndReportProcess <- function (c, method) {
-            result <- codonUsage(method, mrnaNormDataCond[, c, drop = FALSE])
-            cat('.')
-            result
+            on.exit(cat('.'))
+            codonUsage(method, mrnaNormDataCond[, c, drop = FALSE])
         }
 
         getCodonDataFrame <- function (method)
@@ -52,7 +51,7 @@ generateCodonUsageData <- function () {
 
         conditions <- unique(mrnaMapping$Condition)
         usageData <- lapply(c('codon', 'aa'), getCodonDataFrame)
-        for (i in 1 : length(usageData))
+        for (i in indices(usageData))
             colnames(usageData[[i]]) <- conditions
 
         cat('done\n')
@@ -99,6 +98,8 @@ generateStableCodonUsageData <- function () {
 }
 
 generateCodonBackgroundDist <- function () {
+    # The background distribution assumes uniform expression strength for all
+    # genes, so we just set all expression values to 1.
     if (exists('codonBackgroundDist'))
         return()
 
