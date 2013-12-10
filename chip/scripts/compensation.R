@@ -100,6 +100,7 @@ if (! interactive()) {
     allObs <- list()
     allBg <- list()
     ps <- list()
+    clusterSizes <- list()
 
     for (acceptor in unique(trnaAnnotation$Acceptor)) {
         cat(acceptor, '\n')
@@ -109,11 +110,18 @@ if (! interactive()) {
         if (nrow(data) < 2)
             next
 
-        # pvclust can run into various errors. Nothing to be done.
-        pvclusters <- try(pvclust(t(data), nboot = 100))
+        pvclusters <- local({
+            on.exit(sink())
+            # Silence progress report.
+            sink(file = '/dev/null')
+            # pvclust can run into various errors. Nothing to be done.
+            try(suppressWarnings(pvclust(t(data), nboot = 100)))
+        })
+
         if (is(pvclusters, 'try-error'))
             next
         clust <- pvpick(pvclusters)$clusters
+        clusterSizes[[length(clusterSizes) + 1]] <- length(clust)
 
         # Only consider cases with two clearly distinct clusters.
         if (length(clust) != 2) {
@@ -136,7 +144,9 @@ if (! interactive()) {
         #allObs[[acceptor]] <- obs
         #allBg[[acceptor]] <- mean(bg)
     }
-    boxplot(unlist(ps))
+    ps <- unlist(ps)
+    stripchart(ps, method = 'stack', pch = 20, xlab = 'p­values', xlim = c(0, 1),
+               main = 'p­values for significant negative correlation\nof acceptor clusters')
 }
 
 # Visualise all correlation coefficients.
@@ -144,7 +154,10 @@ if (FALSE) {
     add <- FALSE
     for (acc in trnaAcceptorCor) {
         if (is.null(acc)) next
-        hist(acc[upper.tri(acc)], breaks = 20, add = add, col = '#00000040')
+        hist(acc[upper.tri(acc)], breaks = 20, add = add, col = '#00000040',
+             xlim = c(-1, 1), ylim = c(0, 12),
+             main = 'Histogram of all correlation coefficients for all acceptors',
+             xlab = 'Rank correlation coefficient of upper triangle of correlation matrix')
         add <- TRUE
     }
 }
