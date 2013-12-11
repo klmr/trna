@@ -119,18 +119,28 @@ def histogram(transcripts, genes):
     return total
 
 
-def codon_usage_for(gene, seq):
+def codon_usage_for(seq, strand = 1, frame = 0):
     """
     Return a count list of codon usage for a given gene.
     """
     hist = empty_codon_dict()
 
-    for pos in range(len(seq) // 3):
-        codon = seq[pos * 3 : pos * 3 + 3]
+    for codon in codons_for_frame(seq, strand, frame):
         if 'N' not in codon:
             hist[codon] += 1
 
     return hist
+
+
+def codons_for_frame(seq, strand = 1, frame = 0):
+    assert strand == 1 or strand == -1, 'strand must be -1 or 1'
+    if strand == -1:
+        seq = seq[::-1]
+
+    upto = (len(seq) - frame) // 3
+    for pos in range(upto):
+        realpos = pos * 3 + frame
+        yield seq[realpos : realpos + 3]
 
 
 def weighted_codon_usage_for(gene, seq, expression):
@@ -142,7 +152,7 @@ def weighted_codon_usage_for(gene, seq, expression):
         return empty_codon_dict()
 
     # TODO Normalise by transcript length -- or not?! -- Nah. For now.
-    hist = codon_usage_for(gene, seq)
+    hist = codon_usage_for(seq)
     return dict((codon, freq * expression)
                 for codon, freq in hist.items())
 
