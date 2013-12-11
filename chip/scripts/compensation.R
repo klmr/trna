@@ -102,13 +102,13 @@ if (! interactive()) {
     ps <- list()
     clusterSizes <- list()
 
-    for (acceptor in unique(trnaAnnotation$Acceptor)) {
+    findGeneClusters <- function (acceptor) {
         cat(acceptor, '\n')
         geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
         cols <- tissueCols(tissue)
         data <- trnaNormDataCond[geneIds, cols]
         if (nrow(data) < 2)
-            next
+            return()
 
         pvclusters <- local({
             on.exit(sink())
@@ -119,10 +119,14 @@ if (! interactive()) {
         })
 
         if (is(pvclusters, 'try-error'))
-            next
+            return()
         clust <- pvpick(pvclusters)$clusters
         clusterSizes[[length(clusterSizes) + 1]] <- length(clust)
+        clust
+    }
 
+    for (acceptor in unique(trnaAnnotation$Acceptor)) {
+        clust <- findGeneClusters(acceptor)
         # Only consider cases with two clearly distinct clusters.
         if (length(clust) != 2) {
             warning('Skipping ', acceptor, ' because it has ',
