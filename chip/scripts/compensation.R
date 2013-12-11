@@ -147,6 +147,13 @@ if (! interactive()) {
     ps <- unlist(ps)
     stripchart(ps, method = 'stack', pch = 20, xlab = 'p­values', xlim = c(0, 1),
                main = 'p­values for significant negative correlation\nof acceptor clusters')
+    pOfH0 <- ks.test(ps, runif(1000))
+    #' @TODO Add QQ plot instead of the silly stripchart
+
+    haveSomeEvidence <- names(ps)[ps < 0.2]
+    correlations <- unlist(sapply(haveSomeEvidence, function(n) trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]))
+    hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
+    lines(density(correlations), lwd = 2, col = colors[1])
 }
 
 # Visualise all correlation coefficients.
