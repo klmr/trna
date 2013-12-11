@@ -256,7 +256,14 @@ if (! interactive()) {
     mkdir('plots/usage')
     plotSpiderWeb()
 
-    generateCodonUsageData()
+    mrnaLoadData()
+    mrnaSetupCountDataSet()
+    mrnaNormalizeData()
+    local({
+        oldwd <- getwd(); on.exit(setwd(oldwd))
+        setwd('../rna')
+        generateCodonUsageData()
+    })
     plotCodonsByType()
     local({
         on.exit(dev.off())
