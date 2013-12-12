@@ -114,11 +114,8 @@ if (! interactive()) {
             try(suppressWarnings(pvclust(t(data), nboot = 100)))
         })
 
-        if (is(pvclusters, 'try-error'))
-            return()
-        clust <- pvpick(pvclusters)$clusters
-        clusterSizes[[length(clusterSizes) + 1]] <- length(clust)
-        clust
+        if (! is(pvclusters, 'try-error'))
+            pvpick(pvclusters)$clusters
     }
 
     clusterMeans <- function (clust, data) {
@@ -131,7 +128,6 @@ if (! interactive()) {
         do.call(rbind, lapply(clust, function (c) colMeans(data[c, ])))
     }
 
-    clusterSizes <- list()
     #' @TODO Is rank correlation really appropriate here?
     corMethod <- 'spearman'
 
