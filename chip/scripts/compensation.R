@@ -130,7 +130,7 @@ if (! interactive()) {
         # Only consider cases with two clearly distinct clusters.
         if (length(clust) != 2) {
             warning('Skipping ', acceptor, ' because it has ',
-                    length(clust), ' clusters')
+                    length(clust), ' clusters', call. = FALSE)
             next
         }
 
