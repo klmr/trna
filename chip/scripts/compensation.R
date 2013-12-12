@@ -149,18 +149,21 @@ if (! interactive()) {
                                                     method = corMethod))),
                       clusters)
     totalBackground <- do.call(c, background)
+    test <- ks.test(observations, totalBackground)
+
     hist(totalBackground, breaks = 25, col = 'grey', border = 'grey',
          main = 'Background distribution of correlations',
          xlab = 'Correlation coefficient', ylab = 'Frequency of correlation coefficient')
     map(fun(x = abline(v = x, col = colors[1])), observations)
     par(usr = c(0, 1, 0, 1))
-    text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2, offset = 0)
+    text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
+    text(1, 0.1, bquote(italic(p) == .(sprintf('%0.3f', test$p.value))),
+         col = colors[1], pos = 2)
 
-    ps <- mapply(function (x, bg) count(bg <= x) / length(bg), observations, background)
-    pval <- ks.test(observations, totalBackground)
+    negCorAcceptors <- names(which(observations < -0.5))
+    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
+                        negCorAcceptors) %|% unlist
 
-    haveSomeEvidence <- names(ps)[ps < 0.2]
-    correlations <- unlist(sapply(haveSomeEvidence, function(n) trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]))
     hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
     lines(density(correlations), lwd = 2, col = colors[1])
 }
