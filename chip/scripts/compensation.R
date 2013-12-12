@@ -34,39 +34,9 @@ plotCorrelation <- function (data, ...)
 plotAcceptorCorrelation <- function (acceptor)
     plotCorrelation(trnaAcceptorCor[[acceptor]], main = paste('Acceptor', acceptor))
 
-#createRandomBackground <- function (acc, tissue) {
-#    size <- nrow(subset(trnaAnnotation, Acceptor == acc))
-#    trnas <- sample(rownames(trnaAnnotation), size)
-#    cols <- tissueCols(tissue)
-#    cor(t(trnaNormDataCond[trnas, cols]), method = 'spearman')
-#}
-
-createRotatedBackground <- function (acceptor, tissue) {
-    geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
-    cols <- tissueCols(tissue)
-    rotatedCor <- function (i)
-        trnaNormDataCond[geneIds, …]
-    lapply(indices(stages)[-1] - 1, rotatedCor)
-}
-
-createPermutedBackground <- function (acceptor, tissue) {
-    geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
-    cols <- tissueCols(tissue)
-    nbootstrap <- 100
-    lapply(1 : nbootstrap,
-           function (i) trnaNormDataCond[geneIds, cols[sample.int(length(cols))]])
-}
-
-createBackground <- function (acc, tissue)
-    createPermutedBackground(acc, tissue)
-
 plotBackgroundCorrelation <- function (acceptor)
     plotCorrelation(trnaBackgroundCor[[acceptor]],
                     main = paste('Acceptor background', acceptor))
-
-regressClusters <- function(data, cluster1, cluster2)
-    cor(colMeans(data[cluster2, ]), colMeans(data[cluster1, ]),
-        method = 'spearman')
 
 scrambledCor <- function (x, method = 'pearson',
                           permutation = sample.int(nrow(x))) {
@@ -144,7 +114,8 @@ if (! interactive()) {
 
     hist(totalBackground, breaks = 25, col = 'grey', border = 'grey',
          main = 'Background distribution of correlations',
-         xlab = 'Correlation coefficient', ylab = 'Frequency of correlation coefficient')
+         xlab = 'Correlation coefficient',
+         ylab = 'Frequency of correlation coefficient')
     map(fun(x = abline(v = x, col = colors[1])), observations)
     par(usr = c(0, 1, 0, 1))
     text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
