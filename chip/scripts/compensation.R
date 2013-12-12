@@ -106,13 +106,8 @@ if (! interactive()) {
         if (nrow(data) < 2)
             return()
 
-        pvclusters <- local({
-            on.exit(sink())
-            # Silence progress report.
-            sink(file = '/dev/null')
-            # pvclust can run into various errors. Nothing to be done.
-            try(suppressWarnings(pvclust(t(data), nboot = 100)))
-        })
+        # pvclust can run into various errors. Nothing to be done.
+        pvclusters <- silent(try(suppressWarnings(pvclust(t(data), nboot = 100))))
 
         if (! is(pvclusters, 'try-error'))
             pvpick(pvclusters)$clusters
