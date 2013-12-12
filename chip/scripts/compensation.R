@@ -149,8 +149,13 @@ if (! interactive()) {
                                                     method = corMethod))),
                       clusters)
     totalBackground <- do.call(c, background)
-    hist(totalBackground, breaks = 25, col = 'grey', border = 'grey')
+    hist(totalBackground, breaks = 25, col = 'grey', border = 'grey',
+         main = 'Background distribution of correlations',
+         xlab = 'Correlation coefficient', ylab = 'Frequency of correlation coefficient')
     map(fun(x = abline(v = x, col = colors[1])), observations)
+    par(usr = c(0, 1, 0, 1))
+    text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2, offset = 0)
+
     ps <- mapply(function (x, bg) count(bg <= x) / length(bg), observations, background)
     pval <- ks.test(observations, totalBackground)
 
