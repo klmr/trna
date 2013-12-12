@@ -82,16 +82,24 @@ plotCodonsByType <- function () {
             mrna <- `colnames<-`(mrna[, colim], stages)
             trna <- `colnames<-`(trna[, colit], stages)
 
+            # Reverse the order of the stages.
+            mrna <- mrna[, ncol(mrna) : 1]
+            trna <- trna[, ncol(trna) : 1]
+
+            # We shuffle the order of the colours to avoid giving the misleading
+            # impression of a gradient.
+            grays <- gray.colors(length(colors) - 1)[c(3, 6, 2, 5, 1, 4, 7)]
+
             local({
-                oldPar <- par(mfrow = c(1,2), lty = 0, xpd = TRUE)
+                oldPar <- par(mfrow = c(1, 2), lty = 0, xpd = TRUE)
                 on.exit(par(oldPar))
                 mapply(function (data, title) {
-                        barplot(data, horiz = TRUE, col = colors, axes = FALSE,
+                        barplot(data, horiz = TRUE, col = grays, axes = FALSE,
                                 xlab = sprintf('Proportion of %s', title),
-                                las = 1, names.arg = readable(stages))
+                                las = 1, names.arg = readable(colnames(data)))
                         axis(1, 0 : 4 / 4, sprintf('%d%%', 0 : 4 * 25), cex.axis = 0.75)
                         legendPos <- data[, ncol(data)]
-                        legendCol <- colors[legendPos != 0]
+                        legendCol <- grays[legendPos != 0]
                         legendPos <- cumsum(legendPos[legendPos != 0])
                         legend <- names(legendPos)
                         legendPos <- c(0, legendPos[-length(legendPos)])
