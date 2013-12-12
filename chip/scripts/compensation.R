@@ -129,16 +129,3 @@ if (! interactive()) {
     hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
     lines(density(correlations), lwd = 2, col = colors[1])
 }
-
-# Visualise all correlation coefficients.
-if (FALSE) {
-    add <- FALSE
-    for (acc in trnaAcceptorCor) {
-        if (is.null(acc)) next
-        hist(acc[upper.tri(acc)], breaks = 20, add = add, col = '#00000040',
-             xlim = c(-1, 1), ylim = c(0, 12),
-             main = 'Histogram of all correlation coefficients for all acceptors',
-             xlab = 'Rank correlation coefficient of upper triangle of correlation matrix')
-        add <- TRUE
-    }
-}
