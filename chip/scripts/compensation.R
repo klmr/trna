@@ -97,6 +97,11 @@ if (! interactive()) {
     trnaBackgroundCor <- sapply(as.character(unique(trnaAnnotation$Acceptor)),
                                 createRandomBackground, tissue)
 
+    acceptorData <- function (acceptor)
+        let(geneIds = rownames(subset(trnaAnnotation, Acceptor == acceptor)),
+            cols = tissueCols(tissue),
+            trnaNormDataCond[geneIds, cols])
+
     findGeneClusters <- function (data) {
         if (nrow(data) < 2)
             return()
@@ -126,36 +131,25 @@ if (! interactive()) {
         do.call(rbind, lapply(clust, function (c) colMeans(data[c, ])))
     }
 
-    allObs <- list()
-    allBg <- list()
-    ps <- list()
     clusterSizes <- list()
 
-    for (acceptor in unique(trnaAnnotation$Acceptor)) {
-        cat(acceptor, '\n')
-        geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
-        cols <- tissueCols(tissue)
-        data <- trnaNormDataCond[geneIds, cols]
-        clust <- findGeneClusters(data)
-        clusters <- clusterMeans(clust, data)
+    data <- map(acceptorData, unique(trnaAnnotation$Acceptor))
+    clust <- map(findGeneClusters, data)
+    clusters <- map(clusterMeans, clust, data)
+    clusters <- filter(neg(is.null), clusters)
+    observations <- map(fun(c = cor(c[1, ], c[2, ], method = 'spearman')), clusters)
+    background <- map(fun(c = apply(permutations, ROWS,
+                                    function(p) cor(c[1, ], c[2, p],
+                                                    method = 'spearman'))),
+                      clusters)
+    totalBackground <- do.call(c, background)
+    hist(totalBackground, breaks = 25, col = 'grey', border = 'grey')
+    observations <- unlist(observations)
+    map(fun(x = abline(v = x, col = colors[1])), observations)
+    ps <- mapply(function (x, bg) count(bg <= x) / length(bg), observations, background)
+    #ps <- map(fun(x = count(totalBackground <= x) / length(totalBackground)), observations)
+    #ps <- unlist(ps)
 
-        if (is.null(clusters))
-            next
-
-        obs <- cor(clusters[1, ], clusters[2, ], method = 'spearman')
-        permutations <- uperm(ncol(clusters))
-        bg <- apply(permutations, ROWS,
-                     function (p) cor(clusters[1, ], clusters[2, p],
-                                      method = 'spearman'))
-        p <- count(bg <= obs) / upermn(1 : ncol(clusters))
-        ps[[acceptor]] <- p
-
-        #obs <- regressClusters(data, clust[[1]], clust[[2]])
-        #bg  <- sapply(trnaBackground, regressClusters, clust[[1]], clust[[2]])
-        #allObs[[acceptor]] <- obs
-        #allBg[[acceptor]] <- mean(bg)
-    }
-    ps <- unlist(ps)
     stripchart(ps, method = 'stack', pch = 20, xlab = 'p­values', xlim = c(0, 1),
                main = 'p­values for significant negative correlation\nof acceptor clusters')
     pOfH0 <- ks.test(ps, runif(1000))
