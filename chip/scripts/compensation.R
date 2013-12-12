@@ -132,28 +132,27 @@ if (! interactive()) {
     }
 
     clusterSizes <- list()
+    #' @TODO Is rank correlation really appropriate here?
+    corMethod <- 'spearman'
 
-    data <- map(acceptorData, unique(trnaAnnotation$Acceptor))
+    set.seed(123)
+
+    acceptors <- unique(trnaAnnotation$Acceptor)
+    data <- setNames(map(acceptorData, acceptors), acceptors)
     clust <- map(findGeneClusters, data)
     clusters <- map(clusterMeans, clust, data)
     clusters <- filter(neg(is.null), clusters)
-    observations <- map(fun(c = cor(c[1, ], c[2, ], method = 'spearman')), clusters)
+    observations <- map(fun(c = cor(c[1, ], c[2, ], method = corMethod)), clusters)
+    observations <- unlist(observations)
     background <- map(fun(c = apply(permutations, ROWS,
                                     function(p) cor(c[1, ], c[2, p],
-                                                    method = 'spearman'))),
+                                                    method = corMethod))),
                       clusters)
     totalBackground <- do.call(c, background)
     hist(totalBackground, breaks = 25, col = 'grey', border = 'grey')
-    observations <- unlist(observations)
     map(fun(x = abline(v = x, col = colors[1])), observations)
     ps <- mapply(function (x, bg) count(bg <= x) / length(bg), observations, background)
-    #ps <- map(fun(x = count(totalBackground <= x) / length(totalBackground)), observations)
-    #ps <- unlist(ps)
-
-    stripchart(ps, method = 'stack', pch = 20, xlab = 'p­values', xlim = c(0, 1),
-               main = 'p­values for significant negative correlation\nof acceptor clusters')
-    pOfH0 <- ks.test(ps, runif(1000))
-    #' @TODO Add QQ plot instead of the silly stripchart
+    pval <- ks.test(observations, totalBackground)
 
     haveSomeEvidence <- names(ps)[ps < 0.2]
     correlations <- unlist(sapply(haveSomeEvidence, function(n) trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]))
