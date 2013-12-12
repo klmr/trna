@@ -97,11 +97,6 @@ if (! interactive()) {
     trnaBackgroundCor <- sapply(as.character(unique(trnaAnnotation$Acceptor)),
                                 createRandomBackground, tissue)
 
-    allObs <- list()
-    allBg <- list()
-    ps <- list()
-    clusterSizes <- list()
-
     findGeneClusters <- function (data) {
         if (nrow(data) < 2)
             return()
@@ -121,20 +116,32 @@ if (! interactive()) {
         clust
     }
 
+    clusterMeans <- function (clust, data) {
+        # Only consider cases with two clearly distinct clusters.
+        if (length(clust) != 2) {
+            warning('Skipping ', acceptor, ' because it has ',
+                    length(clust), ' clusters', call. = FALSE)
+            return()
+        }
+        do.call(rbind, lapply(clust, function (c) colMeans(data[c, ])))
+    }
+
+    allObs <- list()
+    allBg <- list()
+    ps <- list()
+    clusterSizes <- list()
+
     for (acceptor in unique(trnaAnnotation$Acceptor)) {
         cat(acceptor, '\n')
         geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
         cols <- tissueCols(tissue)
         data <- trnaNormDataCond[geneIds, cols]
         clust <- findGeneClusters(data)
-        # Only consider cases with two clearly distinct clusters.
-        if (length(clust) != 2) {
-            warning('Skipping ', acceptor, ' because it has ',
-                    length(clust), ' clusters', call. = FALSE)
-            next
-        }
+        clusters <- clusterMeans(clust, data)
 
-        clusters <- do.call(rbind, lapply(clust, function (c) colMeans(data[c, ])))
+        if (is.null(clusters))
+            next
+
         obs <- cor(clusters[1, ], clusters[2, ], method = 'spearman')
         permutations <- uperm(ncol(clusters))
         bg <- apply(permutations, ROWS,
