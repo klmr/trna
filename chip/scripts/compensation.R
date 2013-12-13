@@ -110,7 +110,7 @@ if (! interactive()) {
                                                     method = corMethod))),
                       clusters)
     totalBackground <- do.call(c, background)
-    test <- ks.test(observations, totalBackground)
+    test <- ks.test(observations, totalBackground, alternative = 'greater')
 
     hist(totalBackground, breaks = 25, col = 'grey', border = 'grey',
          main = 'Background distribution of correlations',
