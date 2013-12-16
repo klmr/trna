@@ -106,8 +106,8 @@ if (! interactive()) {
     observations <- map(fun(c = cor(c[1, ], c[2, ], method = corMethod)), clusters)
     observations <- unlist(observations)
     background <- map(fun(c = apply(permutations, ROWS,
-                                    function(p) cor(c[1, ], c[2, p],
-                                                    method = corMethod))),
+                                    fun(p = cor(c[1, ], c[2, p],
+                                                method = corMethod)))),
                       clusters)
     totalBackground <- do.call(c, background)
     test <- ks.test(observations, totalBackground, alternative = 'greater')
