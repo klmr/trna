@@ -112,20 +112,32 @@ if (! interactive()) {
     totalBackground <- do.call(c, background)
     test <- ks.test(observations, totalBackground, alternative = 'greater')
 
-    hist(totalBackground, breaks = 25, col = 'grey', border = 'grey',
-         main = 'Background distribution of correlations',
-         xlab = 'Correlation coefficient',
-         ylab = 'Frequency of correlation coefficient')
-    map(fun(x = abline(v = x, col = colors[1])), observations)
-    par(usr = c(0, 1, 0, 1))
-    text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
-    text(1, 0.1, bquote(italic(p) == .(sprintf('%0.3f', test$p.value))),
-         col = colors[1], pos = 2)
+    plotTestVis <- function (tissue, totalBackground, observations, test) {
+        on.exit(dev.off())
+        pdf(sprintf('plots/compensation/%s.pdf', tissue))
+        hist(totalBackground, breaks = 25, col = 'grey', border = 'grey',
+             main = 'Background distribution of correlations',
+             xlab = 'Correlation coefficient',
+             ylab = 'Frequency of correlation coefficient')
+        invisible(map(fun(x = abline(v = x, col = colors[1])), observations))
+        par(usr = c(0, 1, 0, 1))
+        text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
+        text(1, 0.1, bquote(italic(p) == .(sprintf('%0.3f', test$p.value))),
+             col = colors[1], pos = 2)
+    }
 
-    negCorAcceptors <- names(which(observations < -0.5))
-    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
-                        negCorAcceptors) %|% unlist
+    plotCorrelationDistribution <- function (tissue, trnaAcceptorCor, observations) {
+        on.exit(dev.off())
+        pdf(sprintf('plots/compensation/%s-correlations.pdf', tissue))
+        negCorAcceptors <- names(which(observations < -0.5))
+        correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
+                            negCorAcceptors) %|% unlist
 
-    hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
-    lines(density(correlations), lwd = 2, col = colors[1])
+        hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
+        lines(density(correlations), lwd = 2, col = colors[1])
+    }
+
+    mkdir('plots/compensation')
+    plotTestVis(tissue, totalBackground, observations, test)
+    plotCorrelationDistribution(tissue, trnaAcceptorCor, observations)
 }
