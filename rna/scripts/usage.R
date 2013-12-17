@@ -108,3 +108,25 @@ generateCodonBackgroundDist <- function () {
     codonBackgroundDist <<- codonUsage('codon', allGenes)
     aaBackgroundDist <<- codonUsage('aa', allGenes)
 }
+
+backgroundCodonUsage <- function (strand, frame) {
+    script <- 'scripts/codon_background_usage.py'
+    transcripts <- '../common/data/Mus_musculus.NCBIM37.67.transcripts.fa'
+
+    resultData <- paste(readcmd('python', script, transcripts, strand, frame),
+                        collapse = '\n')
+    read.table(text = resultData, row.names = 1, col.names = c('', 'Count'))
+}
+
+generateCodonBackgroundUsage <- function () {
+    if (exists('overallCodonBackground'))
+        return()
+    overallCodonBackground <<-
+        apply(expand.grid(c(-1, 1), 0 : 2), ROWS,
+              fun(row = backgroundCodonUsage(row[1], row[2])))
+    overallAaBackground <-
+        map(fun(x = groupby(x, geneticCode[rownames(x), 1])),
+            overallCodonBackground)
+    overallAaBackground <<- map(fun(x = x[rownames(x) != 'Stop', , drop = FALSE]),
+                                overallAaBackground)
+}
