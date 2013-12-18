@@ -28,18 +28,13 @@ plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
 
     plotRadial <- function (data, labels, main, ...) {
         layout(matrix(c(1, 2), 1, 2, byrow = TRUE), widths = c(1, 0.2))
-        radial.plot(t(data), labels = labels,
-                    rp.type = '', show.grid.labels = 3, main = main, ...)
         lwd <- c(rep(2, ncol(data) - 1), 5)
-        radial.plot(t(data),
-                    rp.type = 'p', line.col = tcolors, lwd = lwd,
-                    show.grid = FALSE, show.radial.grid = FALSE, add = TRUE, ...)
+        radial.plot(data, line.col = tcolors, lwd = lwd, main = main, ...)
         plot.new()
         legend('center', legend = c(stages, 'back­\nground'), fill = tcolors,
                border = NA, bty = 'n', xpd = NA)
     }
 
-    require(plotrix)
     tcolors <- c(colors[indices(stages)], '#00000080')
 
     for (tissue in tissues) {
