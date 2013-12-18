@@ -88,4 +88,8 @@ if (! interactive()) {
     cat('# Generating mRNA codon usage plots\n')
     mkdir('plots/usage')
     plotSpiderWeb('', codonUsageData, aaUsageData)
+
+    cat('# Generate stable mRNA codon usage plots\n')
+    generateStableCodonUsageData()
+    plotSpiderWeb('stable-', stableCodonUsageData, stableAaUsageData)
 }
