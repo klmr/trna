@@ -21,11 +21,6 @@ writeCodonUsageData <- function()
     write.table(codonUsageData, file = 'results/codon-usage.dat')
 
 plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
-    relativeData <- function (data) {
-        sums <- apply(data, COLS, sum)
-        t(apply(data, ROWS, function (row) row / sums))
-    }
-
     plotRadial <- function (data, labels, main, ...) {
         layout(matrix(c(1, 2), 1, 2, byrow = TRUE), widths = c(1, 0.2))
         radial.plot(t(data), labels = labels,

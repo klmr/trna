@@ -10,8 +10,3 @@ trnaGroupFamilyAndType <- function () {
     trnaByAcceptor <<- groupby(trnaNormDataCond, trnaAnnotation$Acceptor, sum)
     trnaByType <<- groupby(trnaNormDataCond, trnaAnnotation$Type, sum)
 }
-
-relativeData <- function (data) {
-    sums <- apply(data, COLS, sum)
-    t(apply(data, ROWS, function (row) row / sums))
-}

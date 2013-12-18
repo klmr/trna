@@ -1,3 +1,4 @@
+#' @TODO This is currently NOT portable! Switch to modules!
 source('../../../scripts/basic.R', chdir = TRUE)
 
 tissues <- c(liver = 'liver', brain = 'brain')
@@ -31,6 +32,10 @@ loadGeneticCode <- function () {
                                col.names = c('', 'AA'),
                                stringsAsFactors = FALSE)
 }
+
+relativeData <- function (data)
+    let(sums = apply(data, COLS, sum),
+        t(apply(data, ROWS, function (row) row / sums)))
 
 # FIXME Remove the TeXy hack once we switch to modules.
 oldReadable <- readable
