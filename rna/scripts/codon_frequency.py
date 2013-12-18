@@ -27,17 +27,35 @@ def read_input(expression_stream, transcript_filename):
     The input files are parsed into appropriate structures and returned
     as a tuple.
     """
-    genes = read_genes(expression_stream)
     transcripts = read_sequences(transcript_filename)
+    genes = read_genes(expression_stream, transcripts)
     return transcripts, genes
 
 
-def read_genes(csvfile):
+def read_genes(csvfile, transcripts):
     """
     Return a list of (gene name, expression) tuples read from a CSV file.
     """
     reader = csv.reader(csvfile, delimiter = '\t')
-    return [(row[0], float(row[1])) for row in reader]
+    return normalize([(row[0], float(row[1])) for row in reader], transcripts)
+
+
+def normalize(genes, transcripts):
+    """
+    Calculate the FPKM for unnormalized gene counts
+
+    The counts we get are already library size normalized so we ignore the
+    total number of mapped reads.
+    """
+    def fpk(gene):
+        transcript = transcripts[gene[0]]
+        if transcript is None or transcript == '':
+            return 0
+        return 1000 * gene[1] / len(transcript)
+
+    if len(filter(lambda g: g[1] != 1.0, genes)) == 0:
+        return genes
+    return [(gene[0], fpk(gene)) for gene in genes]
 
 
 def read_sequences(filename):
@@ -151,7 +169,6 @@ def weighted_codon_usage_for(gene, seq, expression):
     if expression == 0:
         return empty_codon_dict()
 
-    # TODO Normalise by transcript length -- or not?! -- Nah. For now.
     hist = codon_usage_for(seq)
     return dict((codon, freq * expression)
                 for codon, freq in hist.items())
