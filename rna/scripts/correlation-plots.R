@@ -64,6 +64,39 @@ plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
     }
 }
 
+plotCodonBackground <- function () {
+    tcolors <- c(gray.colors(5), colors[1])
+    lwd <- c(rep(2, 5), 3)
+    local({
+        on.exit(dev.off())
+        pdf('plots/usage/aa-background.pdf', width = 6, height = 6,
+            family = plotFamily)
+        data <- relativeData(overallAaBackground)[aminoAcids$Short, ]
+        data <- cbind(data[, -1], data[, 1])
+        radial.plot(data, labels = rownames(data), line.col = tcolors,
+                    show.grid.labels = 3, lwd = lwd,
+                    main = 'Amino acid usage background for all reading frames')
+    })
+
+    local({
+        on.exit(dev.off())
+        pdf('plots/usage/codon-background.pdf', width = 10, height = 4,
+            family = plotFamily)
+        data <- as.data.frame(relativeData(overallCodonBackground))
+        sortedCodons <- rownames(data)[order(geneticCode[rownames(data), 1])]
+        groups <- unlist(map(length, split(sortedCodons, geneticCode[sortedCodons, 1])))
+        xcolors <- unlist(map(rep, sapply(c(0.5, 0.8), gray), groups))
+        ylim <- c(0, max(data))
+        barpos <- barplot(data[sortedCodons, 1], col = xcolors, border = NA, xaxt = 'n',
+                          ylim = ylim, ylab = 'Frequency',
+                          main = 'Codon usage background for all reading frames')
+        axispos <- groupby(barpos, geneticCode[sortedCodons, 1], mean)[[1]]
+        axis(1, at = axispos, names(groups), tick = FALSE)
+        map(fun(x, col = lines(barpos[, 1], x, col = col)),
+            data[sortedCodons, -1], colors[indices(data[, -1])])
+    })
+}
+
 if (! interactive()) {
     cat('# Generating mRNA codon usage data\n')
     mrnaLoadData()
@@ -72,7 +105,9 @@ if (! interactive()) {
     generateCodonUsageData()
     loadAminoAcids()
     loadCodonMap()
+    generateStableCodonUsageData()
     generateCodonBackgroundDist()
+    generateCodonBackgroundUsage()
 
     writeCodonUsageData()
 
@@ -85,6 +120,8 @@ if (! interactive()) {
     plotSpiderWeb('', codonUsageData, aaUsageData)
 
     cat('# Generate stable mRNA codon usage plots\n')
-    generateStableCodonUsageData()
     plotSpiderWeb('stable-', stableCodonUsageData, stableAaUsageData)
+
+    cat('# Generate background mRNA codon usage plots\n')
+    plotCodonBackground()
 }
