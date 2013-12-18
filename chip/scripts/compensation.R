@@ -131,7 +131,8 @@ hist.compensation <- function (x, ...) {
     correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
                         negCorAcceptors) %|% unlist
 
-    hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
+    hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey',
+         xlab = 'Correlation coefficient')
     lines(density(correlations), lwd = 2, col = colors[1])
 }
 
@@ -154,11 +155,18 @@ if (! interactive()) {
         on.exit(dev.off())
         pdf(sprintf('plots/compensation/%s-correlations.pdf', x$tissue), family = plotFamily)
         hist(x)
-    }, compensationData) %|% invisible
+    }), compensationData) %|% invisible
 
     map(fun(x = {
         on.exit(dev.off())
         pdf(sprintf('plots/compensation/%s.pdf', tissue), family = plotFamily)
         plot(x)
-    }, compensationData) %|% invisible
+    }), compensationData) %|% invisible
+
+    codons <- setNames(map(names %.% item('observations'), compensationData),
+                       NULL)
+    differentCodons <- do.call(setdiff, codons)
+    sharedCodons <- do.call(intersect, codons)
+    table(geneticCode[differentCodons, ])
+    table(geneticCode[sharedCodons, ])
 }
