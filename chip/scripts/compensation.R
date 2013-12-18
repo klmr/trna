@@ -10,7 +10,7 @@ tissueCols <- function (tissue) {
     cols[sapply(stages, grep, colnames(trnaNormDataCond)[cols])]
 }
 
-plotProgression <- function (acceptor, tissue) {
+plotExpressionChange <- function (acceptor, tissue) {
     cols <- tissueCols(tissue)
     geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
     if (length(geneIds) < 2)
