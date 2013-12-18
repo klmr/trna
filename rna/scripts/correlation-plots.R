@@ -29,7 +29,8 @@ plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
     plotRadial <- function (data, labels, main, ...) {
         layout(matrix(c(1, 2), 1, 2, byrow = TRUE), widths = c(1, 0.2))
         lwd <- c(rep(2, ncol(data) - 1), 5)
-        radial.plot(data, line.col = tcolors, lwd = lwd, main = main, ...)
+        radial.plot(data, labels = labels, main = main, line.col = tcolors,
+                    lwd = lwd, show.grid.labels = 3, ...)
         plot.new()
         legend('center', legend = c(stages, 'back­\nground'), fill = tcolors,
                border = NA, bty = 'n', xpd = NA)
