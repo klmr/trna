@@ -1,4 +1,4 @@
-source('scripts/correlation.R')
+source('scripts/usage.R')
 
 plotRnaCorrelation <- function () {
     methods <- list(gene = mrnaNormDataCond,
@@ -20,7 +20,7 @@ plotRnaCorrelation <- function () {
 writeCodonUsageData <- function()
     write.table(codonUsageData, file = 'results/codon-usage.dat')
 
-plotSpiderWeb <- function () {
+plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
     relativeData <- function (data) {
         sums <- apply(data, COLS, sum)
         t(apply(data, ROWS, function (row) row / sums))
@@ -35,7 +35,8 @@ plotSpiderWeb <- function () {
                     rp.type = 'p', line.col = tcolors, lwd = lwd,
                     show.grid = FALSE, show.radial.grid = FALSE, add = TRUE, ...)
         plot.new()
-        legend('center', legend = c(stages, 'back­\nground'), fill = tcolors, border = NA, bty = 'n', xpd = NA)
+        legend('center', legend = c(stages, 'back­\nground'), fill = tcolors,
+               border = NA, bty = 'n', xpd = NA)
     }
 
     require(plotrix)
@@ -48,7 +49,7 @@ plotSpiderWeb <- function () {
         data <- data[aminoAcids$Short, ]
         rownames(data) <- aminoAcids[aminoAcids$Short == rownames(data), 'Long']
         relative <- relativeData(data)
-        pdf(sprintf('plots/usage/%s.pdf', tissue),
+        pdf(sprintf('plots/usage/%s%s.pdf', type, tissue),
             width = 6, height = 6, family = plotFamily)
         plotRadial(relative, rownames(data),
                    radial.lim = c(0, 0.1),
@@ -60,7 +61,7 @@ plotSpiderWeb <- function () {
         data <- codonUsageData[rcodons, grep(tissue, colnames(codonUsageData))]
         data$Background <- codonBackgroundDist[rcodons, 'Count']
         relative <- relativeData(data)
-        pdf(sprintf('plots/usage/arginine-%s.pdf', tissue),
+        pdf(sprintf('plots/usage/%sarginine-%s.pdf', type, tissue),
             width = 6, height = 6, family = plotFamily)
         plotRadial(relative, rownames(data), radial.lim = c(0, 0.3),
                    main = sprintf('Arginine codon usage across stages in %s\n', tissue))
@@ -86,5 +87,9 @@ if (! interactive()) {
 
     cat('# Generating mRNA codon usage plots\n')
     mkdir('plots/usage')
-    plotSpiderWeb()
+    plotSpiderWeb('', codonUsageData, aaUsageData)
+
+    cat('# Generate stable mRNA codon usage plots\n')
+    generateStableCodonUsageData()
+    plotSpiderWeb('stable-', stableCodonUsageData, stableAaUsageData)
 }

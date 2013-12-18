@@ -3,7 +3,7 @@ source('scripts/load-data.R')
 local({
     oldwd <- getwd(); on.exit(setwd(oldwd))
     setwd('../rna')
-    source('scripts/correlation.R')
+    source('scripts/usage.R')
 })
 
 trnaGroupFamilyAndType <- function () {
