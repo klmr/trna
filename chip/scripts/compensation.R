@@ -15,9 +15,10 @@ plotExpressionChange <- function (acceptor, tissue) {
     geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
     if (length(geneIds) < 2)
         return()
-    heatmap.2(as.matrix(trnaNormDataCond[geneIds, cols]), Colv = FALSE,
-              dendrogram = 'row', main = paste('Acceptor', acceptor),
-              col = contrastColors, tracecol = last(colors), trace = 'none')
+    heatmap(as.matrix(trnaNormDataCond[geneIds, cols]), Colv = NA,
+            col = progressColors,
+            main = paste('Acceptor', acceptor, 'for', readable(tissue)),
+            labCol = readable(colnames(trnaNormDataCond[, cols])))
 }
 
 isoacceptorCorrelations <- function (acceptor, tissue) {
@@ -142,6 +143,12 @@ if (! interactive()) {
     mkdir('plots/compensation')
     set.seed(123)
     (compensationData <- map(compensationAnalysis, tissues))
+
+    local({
+        on.exit(dev.off())
+        pdf('plots/compensation/liver-CAG.pdf')
+        plotExpressionChange('CAG', 'liver')
+    })
 
     map(fun(x = {
         on.exit(dev.off())
