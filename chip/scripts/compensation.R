@@ -93,7 +93,7 @@ compensationAnalysis <- function (tissue) {
     background <- map(fun(c = apply(permutations, ROWS,
                                     fun(p = cor(c[1, ], c[2, p],
                                                 method = corMethod)))), clusters)
-    totalBackground <- do.call(c, background)
+    totalBackground <- setNames(do.call(c, background), NULL)
     test <- ks.test(observations, totalBackground, alternative = 'greater')
 
     structure(list(tissue = tissue,
