@@ -124,6 +124,12 @@ plot.compensation <- function (x, ...) {
          col = colors[1], pos = 2)
 }
 
+plotHistAndDensity <- function (correlations, breaks = 25, ...) {
+    hist(correlations, breaks = breaks, freq = FALSE, col = 'grey', border = 'grey',
+         xlab = 'Correlation coefficient', ylim = c(0, 1))
+    lines(density(correlations), lwd = 2, col = colors[1])
+}
+
 hist.compensation <- function (x, ...) {
     trnaAcceptorCor <- sapply(as.character(unique(trnaAnnotation$Acceptor)),
                               isoacceptorCorrelations, x$tissue)
@@ -131,9 +137,19 @@ hist.compensation <- function (x, ...) {
     correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
                         negCorAcceptors) %|% unlist
 
-    hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey',
-         xlab = 'Correlation coefficient')
-    lines(density(correlations), lwd = 2, col = colors[1])
+    plotHistAndDensity(correlations, ...)
+}
+
+antihist <- function (x) {
+    allAcceptors <-as.character(unique(trnaAnnotation$Acceptor))
+    trnaAcceptorCor <- sapply(allAcceptors, isoacceptorCorrelations, x$tissue)
+    negCorAcceptors <- names(which(x$observations < -0.5))
+    use <- setdiff(allAcceptors, negCorAcceptors)
+    use <- filter(fun(x = ! is.null(trnaAcceptorCor[[x]])), use)
+    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
+                        use) %|% unlist
+
+    plotHistAndDensity(correlations)
 }
 
 if (! interactive()) {
@@ -145,16 +161,21 @@ if (! interactive()) {
     set.seed(123)
     (compensationData <- map(compensationAnalysis, tissues))
 
-    local({
-        on.exit(dev.off())
-        pdf('plots/compensation/liver-CAG.pdf')
-        plotExpressionChange('CAG', 'liver')
-    })
+    for (codon in c('CAG', 'AGT')) {
+        map(fun(tissue = {
+            on.exit(dev.off())
+            pdf(sprintf('plots/compensation/%s-%s.pdf', tissue, codon))
+            plotExpressionChange(codon, tissue)
+        }), tissues) %|% invisible
+    }
 
     map(fun(x = {
         on.exit(dev.off())
-        pdf(sprintf('plots/compensation/%s-correlations.pdf', x$tissue), family = plotFamily)
+        pdf(sprintf('plots/compensation/%s-correlations.pdf', x$tissue),
+            width = 8, height = 4, family = plotFamily)
+        par(mfrow = c(1, 2))
         hist(x)
+        antihist(x)
     }), compensationData) %|% invisible
 
     map(fun(x = {
@@ -163,8 +184,8 @@ if (! interactive()) {
         plot(x)
     }), compensationData) %|% invisible
 
-    codons <- setNames(map(names %.% item('observations'), compensationData),
-                       NULL)
+    codons <- setNames(map(fun(x = names(x$observations)[x$observations < 0]),
+                           compensationData), NULL)
     differentCodons <- do.call(setdiff, codons)
     sharedCodons <- do.call(intersect, codons)
     table(geneticCode[differentCodons, ])
