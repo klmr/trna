@@ -77,31 +77,6 @@ clusterMeans <- function (acceptor, clust, data) {
     do.call(rbind, lapply(clust, function (c) colMeans(data[c, ])))
 }
 
-plotTestVis <- function (tissue, totalBackground, observations, test) {
-    on.exit(dev.off())
-    pdf(sprintf('plots/compensation/%s.pdf', tissue))
-    hist(totalBackground, breaks = 25, col = 'grey', border = 'grey',
-         main = 'Background distribution of correlations',
-         xlab = 'Correlation coefficient',
-         ylab = 'Frequency of correlation coefficient')
-    invisible(map(fun(x = abline(v = x, col = colors[1])), observations))
-    par(usr = c(0, 1, 0, 1))
-    text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
-    text(1, 0.1, bquote(italic(p) == .(sprintf('%0.3f', test$p.value))),
-         col = colors[1], pos = 2)
-}
-
-plotCorrelationDistribution <- function (tissue, trnaAcceptorCor, observations) {
-    on.exit(dev.off())
-    pdf(sprintf('plots/compensation/%s-correlations.pdf', tissue))
-    negCorAcceptors <- names(which(observations < -0.5))
-    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
-                        negCorAcceptors) %|% unlist
-
-    hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
-    lines(density(correlations), lwd = 2, col = colors[1])
-}
-
 compensationAnalysis <- function (tissue) {
     #' @TODO Is rank correlation really appropriate here?
     corMethod <- 'spearman'
@@ -121,23 +96,42 @@ compensationAnalysis <- function (tissue) {
     totalBackground <- do.call(c, background)
     test <- ks.test(observations, totalBackground, alternative = 'greater')
 
-    plotTestVis(tissue, totalBackground, observations, test)
-
-    trnaAcceptorCor <- sapply(as.character(unique(trnaAnnotation$Acceptor)),
-                              isoacceptorCorrelations, tissue)
-
-    plotCorrelationDistribution(tissue, trnaAcceptorCor, observations)
-
-    structure(list(clusterSizes = table(unlist(map(length, clust))),
-                   p.value = test$p.value),
+    structure(list(tissue = tissue,
+                   background = totalBackground,
+                   observations = observations,
+                   test = test,
+                   clusterSizes = table(unlist(map(length, clust)))),
               class = 'compensation')
 }
 
 print.compensation <- function (x, ...) {
-    cat('Frequencies of cluster sizes for analysis:')
+    cat(sprintf('Frequencies of cluster sizes for analysis of %s:', x$tissue))
     print(x$clusterSizes)
-    cat(sprintf('\np-value = %0.5f (ks.test)\n', x$p.value))
+    cat(sprintf('\np-value = %0.5f (ks.test)\n', x$test$p.value))
     x
+}
+
+plot.compensation <- function (x, ...) {
+    hist(x$background, breaks = 25, col = 'grey', border = 'grey',
+         main = 'Background distribution of correlations',
+         xlab = 'Correlation coefficient',
+         ylab = 'Frequency of correlation coefficient')
+    invisible(map(fun(x = abline(v = x, col = colors[1])), x$observations))
+    par(usr = c(0, 1, 0, 1))
+    text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
+    text(1, 0.1, bquote(italic(p) == .(sprintf('%0.3f', x$test$p.value))),
+         col = colors[1], pos = 2)
+}
+
+hist.compensation <- function (x, ...) {
+    trnaAcceptorCor <- sapply(as.character(unique(trnaAnnotation$Acceptor)),
+                              isoacceptorCorrelations, x$tissue)
+    negCorAcceptors <- names(which(x$observations < -0.5))
+    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
+                        negCorAcceptors) %|% unlist
+
+    hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
+    lines(density(correlations), lwd = 2, col = colors[1])
 }
 
 if (! interactive()) {
@@ -147,5 +141,17 @@ if (! interactive()) {
 
     mkdir('plots/compensation')
     set.seed(123)
-    map(compensationAnalysis, tissues)
+    (compensationData <- map(compensationAnalysis, tissues))
+
+    map(fun(x = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/compensation/%s-correlations.pdf', x$tissue), family = plotFamily)
+        hist(x)
+    }, compensationData) %|% invisible
+
+    map(fun(x = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/compensation/%s.pdf', tissue), family = plotFamily)
+        plot(x)
+    }, compensationData) %|% invisible
 }
