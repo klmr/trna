@@ -152,6 +152,27 @@ antihist <- function (x) {
     plotHistAndDensity(correlations)
 }
 
+chisq.test.compensation2 <- function (x) {
+    bg <- table(x$background)
+    obs <- table(x$observations)
+
+    contingency <- rbind(as.vector(bg), rep(0, length(bg)))
+    contingency[2, match(names(obs), names(bg))] <- as.vector(obs)
+    chisq.test(contingency[2, ], p = contingency[1, ] / sum(contingency[1, ]))
+}
+
+chisq.test.default <- stats::chisq.test
+
+chisq.test <- function (x, ...) UseMethod('chisq.test')
+
+plot.compensation2 <- function (x, col = c('gray', 'red'), ...) {
+    plot(density(x$background, adjust = 1.2), col = col[1], ...)
+    lines(density(x$observations, adjust = 1.2), col = col[2], ...)
+    text(0, 0.2, x$acceptor)
+    test <- chisq.test(x)
+    text(0, 0.1, bquote(italic(p) == .(sprintf('%0.2f', test$p.value))))
+}
+
 if (! interactive()) {
     trnaLoadData()
     trnaSetupCountDataSet()
@@ -227,20 +248,21 @@ if (! interactive()) {
             1 : nrow(genes)) -> background
 
         cat('.')
-        list(observations = correlations, background = unlist(background))
+        structure(list(acceptor = acceptor,
+                       observations = correlations,
+                       background = unlist(background)),
+                  class = 'compensation2')
     }), unique(trnaAnnotation$Acceptor)), unique(trnaAnnotation$Acceptor))
     cat('\n')
+
+    allTests <- filter(neg(is.null), allTests)
 
     local({
         on.exit(dev.off())
         pdf('plots/compensation/all-density.pdf', height = 10, width = 12, family = plotFamily)
         par(mfrow = c(8, 6), oma = rep(0, 4), mar = rep(0, 4))
-        map(fun(x, acceptor = {
-            if (is.null(x))
-                return()
-            plot(density(x$background, adjust = 1.2), lwd = 2)
-            lines(density(x$observations, adjust = 1.2), lwd = 2, col = colors[1])
-            text(0, 0.2, acceptor)
-        }), allTests, names(allTests)) %|% invisible
+        invisible(map(p(plot, col = c('gray', colors[1]), lwd = 2), allTests))
     })
+
+    pvalues <- unlist(map(item('p.value') %.% chisq.test, allTests))
 }
