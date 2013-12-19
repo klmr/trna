@@ -1,7 +1,7 @@
 source('../common/scripts/basic.R')
 source('scripts/load-data.R')
 
-pairwiseDifferentialExpression <- function (cds, threshold) {
+pairwiseDifferentialExpression <- function (data, threshold, dispEst = estimateDispersions) {
     cond <- function (x) sprintf('%s-%s', tissue, stages[x])
     contrast <- function (i, j) sprintf('%s/%s', cond(i), cond(j))
 
@@ -18,6 +18,9 @@ pairwiseDifferentialExpression <- function (cds, threshold) {
     for (tissue in tissues) {
         for (i in 1 : (length(stages) - 1)) {
             for (j in (i + 1) : length(stages)) {
+                contrastData <- data[, rownames(subset(trnaMapping,
+                                                       Condition %in% c(cond(i), cond(j))))]
+                cds <- dispEst(estimateSizeFactors(trnaGetCountDataSet(contrastData)))
                 result <- nbinomTest(cds, cond(i), cond(j))
                 significant <- subset(result, ! is.na(padj) & padj < threshold)
                 deResults[[tissue]][[stages[i]]][[stages[j]]] <- result
@@ -36,7 +39,7 @@ trnaPairwiseDiffentialExpression <- function () {
     if (exists('trnaDeGenes'))
         return()
 
-    results <- pairwiseDifferentialExpression(trnaCds, 0.05)
+    results <- pairwiseDifferentialExpression(trnaRawCounts, 0.05)
 
     trnaDeResults <<- results$results
     trnaDeGenes <<- results$de
@@ -48,19 +51,17 @@ trnaDetailedDe <- function () {
         return()
 
     dispEst <- c(Acceptor = estimateDispersions,
-                 Type = p(estimateDispersions, fitType = 'local'))
+                 Type = fun(cds = {
+                            on.exit(assign('lp', lpartial, globalenv()))
+                            rm(lp, envir = environment(lp))
+                            estimateDispersions(cds, fitType = 'local')
+                        }))
 
-    getCds <- function (x)
-        groupby(trnaRawCounts, trnaAnnotation[[x]]) %|%
-        p(newCountDataSet, trnaMapping$Condition) %|%
-        estimateSizeFactors %|% dispEst[[x]]
+    getData <- function (x) groupby(trnaRawCounts, trnaAnnotation[[x]])
 
-    on.exit(assign('lp', lpartial, globalenv()))
-    rm(lp, envir = environment(lp))
-    cds <- sapply(c('Acceptor', 'Type'), getCds)
-
-    trnaAccDe <<- pairwiseDifferentialExpression(cds$Acceptor, 0.05)
-    trnaTypeDe <<- pairwiseDifferentialExpression(cds$Type, 0.05)
+    data <- sapply(c('Acceptor', 'Type'), getData)
+    trnaAccDe <<- pairwiseDifferentialExpression(data$Acceptor, 0.05)
+    trnaTypeDe <<- pairwiseDifferentialExpression(data$Type, 0.05)
 }
 
 trnaTissueDifferentialExpression <- function () {
