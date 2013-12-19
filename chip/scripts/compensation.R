@@ -161,7 +161,18 @@ if (! interactive()) {
     set.seed(123)
     (compensationData <- map(compensationAnalysis, tissues))
 
-    for (codon in c('CAG', 'AGT')) {
+    # Rerun analysis to analyse spread of results.
+
+    compensationFile <- '../common/cache/compensation.RData'
+    suppressWarnings(loaded <- tryCatch(load(compensationFile), error = .('')))
+
+    if (! isTRUE(all.equal(loaded, c('compensationReplication')))) {
+        map(fun(tissue = map(fun(. = compensationAnalysis(tissue)),
+                1 : 20)), tissues) -> compensationReplication
+        save(compensationReplication, file = compensationFile)
+    }
+
+    for (codon in c('CAG', 'AGT', 'GCC')) {
         map(fun(tissue = {
             on.exit(dev.off())
             pdf(sprintf('plots/compensation/%s-%s.pdf', tissue, codon))
