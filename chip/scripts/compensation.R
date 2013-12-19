@@ -201,4 +201,46 @@ if (! interactive()) {
     sharedCodons <- do.call(intersect, codons)
     table(geneticCode[differentCodons, ])
     table(geneticCode[sharedCodons, ])
+
+    # Alternative analysis: pairwise gene correlations, no clusters.
+
+    tissue <- 'liver'
+    allTests <- setNames(map(fun(acceptor = {
+        correlations <- isoacceptorCorrelations(acceptor, tissue)
+        if (is.null(correlations))
+            return()
+        correlations <- correlations[upper.tri(correlations)]
+
+        geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
+        cols <- tissueCols(tissue)
+        genes <- trnaNormDataCond[geneIds, cols]
+
+        permutations <- permn(ncol(genes))
+
+        permCor <- function (genes, gene, perm)
+            map(fun(other = cor(as.numeric(genes[gene, ]),
+                                as.numeric(genes[other, perm]),
+                                method = 'spearman')),
+                (1 : nrow(genes))[-gene])
+
+        map(fun(gene = map(fun(p = permCor(genes, gene, p)), permutations)),
+            1 : nrow(genes)) -> background
+
+        cat('.')
+        list(observations = correlations, background = unlist(background))
+    }), unique(trnaAnnotation$Acceptor)), unique(trnaAnnotation$Acceptor))
+    cat('\n')
+
+    local({
+        on.exit(dev.off())
+        pdf('plots/compensation/all-density.pdf', height = 10, width = 12, family = plotFamily)
+        par(mfrow = c(8, 6), oma = rep(0, 4), mar = rep(0, 4))
+        map(fun(x, acceptor = {
+            if (is.null(x))
+                return()
+            plot(density(x$background, adjust = 1.2), lwd = 2)
+            lines(density(x$observations, adjust = 1.2), lwd = 2, col = colors[1])
+            text(0, 0.2, acceptor)
+        }), allTests, names(allTests)) %|% invisible
+    })
 }
