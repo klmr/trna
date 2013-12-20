@@ -174,24 +174,12 @@ plot.compensation2 <- function (x, col = c('gray', 'red'), ...) {
 }
 
 if (! interactive()) {
+    cat('# Generating compensation analysis plots')
     trnaLoadData()
     trnaSetupCountDataSet()
     trnaNormalizeData()
 
     mkdir('plots/compensation')
-    set.seed(123)
-    (compensationData <- map(compensationAnalysis, tissues))
-
-    # Rerun analysis to analyse spread of results.
-
-    compensationFile <- '../common/cache/compensation.RData'
-    suppressWarnings(loaded <- tryCatch(load(compensationFile), error = .('')))
-
-    if (! isTRUE(all.equal(loaded, c('compensationReplication')))) {
-        map(fun(tissue = map(fun(. = compensationAnalysis(tissue)),
-                1 : 20)), tissues) -> compensationReplication
-        save(compensationReplication, file = compensationFile)
-    }
 
     for (codon in c('CAG', 'AGT', 'GCC')) {
         map(fun(tissue = {
@@ -201,33 +189,11 @@ if (! interactive()) {
         }), tissues) %|% invisible
     }
 
-    map(fun(x = {
-        on.exit(dev.off())
-        pdf(sprintf('plots/compensation/%s-correlations.pdf', x$tissue),
-            width = 8, height = 4, family = plotFamily)
-        par(mfrow = c(1, 2))
-        hist(x)
-        antihist(x)
-    }), compensationData) %|% invisible
-
-    map(fun(x = {
-        on.exit(dev.off())
-        pdf(sprintf('plots/compensation/%s.pdf', tissue), family = plotFamily)
-        plot(x)
-    }), compensationData) %|% invisible
-
-    codons <- setNames(map(fun(x = names(x$observations)[x$observations < 0]),
-                           compensationData), NULL)
-    differentCodons <- do.call(setdiff, codons)
-    sharedCodons <- do.call(intersect, codons)
-    table(geneticCode[differentCodons, ])
-    table(geneticCode[sharedCodons, ])
-
     # Alternative analysis: pairwise gene correlations, no clusters.
 
     tissue <- 'liver'
     testSet <- unique(trnaAnnotation$Acceptor)
-    allTests <- setNames(map(fun(acceptor = {
+    compensationData <- setNames(map(fun(acceptor = {
         correlations <- isoacceptorCorrelations(acceptor, tissue)
         if (is.null(correlations))
             return()
@@ -256,14 +222,14 @@ if (! interactive()) {
     }), testSet), testSet)
     cat('\n')
 
-    allTests <- filter(neg(is.null), allTests)
+    compensationData <- filter(neg(is.null), compensationData)
 
     local({
         on.exit(dev.off())
         pdf('plots/compensation/all-density.pdf', height = 10, width = 12, family = plotFamily)
         par(mfrow = c(8, 6), oma = rep(0, 4), mar = rep(0, 4))
-        invisible(map(p(plot, col = c('gray', colors[1]), lwd = 2), allTests))
+        invisible(map(p(plot, col = c('gray', colors[1]), lwd = 2), compensationData))
     })
 
-    pvalues <- unlist(map(item('p.value') %.% chisq.test, allTests))
+    pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
 }
