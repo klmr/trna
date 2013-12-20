@@ -26,7 +26,8 @@ codonUsage <- function (method, countData) {
 
 loadCodonMap <- function ()
     geneticCode <<- read.table('../common/data/genetic_code.tsv', header = FALSE,
-                               row.names = 1, col.names = c('', 'AA'))
+                               row.names = 1, col.names = c('', 'AA'),
+                               stringsAsFactors = FALSE)
 
 generateCodonUsageData <- function () {
     if (exists('codonUsageData'))
@@ -121,12 +122,13 @@ backgroundCodonUsage <- function (strand, frame) {
 generateCodonBackgroundUsage <- function () {
     if (exists('overallCodonBackground'))
         return()
-    overallCodonBackground <<-
-        apply(expand.grid(c(-1, 1), 0 : 2), ROWS,
+    overallCodonBackground <-
+        apply(expand.grid(c(1, -1), 0 : 2), ROWS,
               fun(row = backgroundCodonUsage(row[1], row[2])))
     overallAaBackground <-
         map(fun(x = groupby(x, geneticCode[rownames(x), 1])),
             overallCodonBackground)
+    overallCodonBackground <<- do.call(cbind, overallCodonBackground)
     overallAaBackground <<- map(fun(x = x[rownames(x) != 'Stop', , drop = FALSE]),
-                                overallAaBackground)
+                                overallAaBackground) %|% lp(do.call, cbind)
 }

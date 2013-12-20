@@ -10,14 +10,15 @@ tissueCols <- function (tissue) {
     cols[sapply(stages, grep, colnames(trnaNormDataCond)[cols])]
 }
 
-plotProgression <- function (acceptor, tissue) {
+plotExpressionChange <- function (acceptor, tissue) {
     cols <- tissueCols(tissue)
     geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
     if (length(geneIds) < 2)
         return()
-    heatmap.2(as.matrix(trnaNormDataCond[geneIds, cols]), Colv = FALSE,
-              dendrogram = 'row', main = paste('Acceptor', acceptor),
-              col = contrastColors, tracecol = last(colors), trace = 'none')
+    heatmap(as.matrix(trnaNormDataCond[geneIds, cols]), Colv = NA,
+            col = progressColors,
+            main = paste('Acceptor', acceptor, 'for', readable(tissue)),
+            labCol = readable(colnames(trnaNormDataCond[, cols])))
 }
 
 isoacceptorCorrelations <- function (acceptor, tissue) {
@@ -77,31 +78,6 @@ clusterMeans <- function (acceptor, clust, data) {
     do.call(rbind, lapply(clust, function (c) colMeans(data[c, ])))
 }
 
-plotTestVis <- function (tissue, totalBackground, observations, test) {
-    on.exit(dev.off())
-    pdf(sprintf('plots/compensation/%s.pdf', tissue))
-    hist(totalBackground, breaks = 25, col = 'grey', border = 'grey',
-         main = 'Background distribution of correlations',
-         xlab = 'Correlation coefficient',
-         ylab = 'Frequency of correlation coefficient')
-    invisible(map(fun(x = abline(v = x, col = colors[1])), observations))
-    par(usr = c(0, 1, 0, 1))
-    text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
-    text(1, 0.1, bquote(italic(p) == .(sprintf('%0.3f', test$p.value))),
-         col = colors[1], pos = 2)
-}
-
-plotCorrelationDistribution <- function (tissue, trnaAcceptorCor, observations) {
-    on.exit(dev.off())
-    pdf(sprintf('plots/compensation/%s-correlations.pdf', tissue))
-    negCorAcceptors <- names(which(observations < -0.5))
-    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
-                        negCorAcceptors) %|% unlist
-
-    hist(correlations, breaks = 25, freq = FALSE, col = 'grey', border = 'grey')
-    lines(density(correlations), lwd = 2, col = colors[1])
-}
-
 compensationAnalysis <- function (tissue) {
     #' @TODO Is rank correlation really appropriate here?
     corMethod <- 'spearman'
@@ -118,26 +94,83 @@ compensationAnalysis <- function (tissue) {
     background <- map(fun(c = apply(permutations, ROWS,
                                     fun(p = cor(c[1, ], c[2, p],
                                                 method = corMethod)))), clusters)
-    totalBackground <- do.call(c, background)
+    totalBackground <- setNames(do.call(c, background), NULL)
     test <- ks.test(observations, totalBackground, alternative = 'greater')
 
-    plotTestVis(tissue, totalBackground, observations, test)
-
-    trnaAcceptorCor <- sapply(as.character(unique(trnaAnnotation$Acceptor)),
-                              isoacceptorCorrelations, tissue)
-
-    plotCorrelationDistribution(tissue, trnaAcceptorCor, observations)
-
-    structure(list(clusterSizes = table(unlist(map(length, clust))),
-                   p.value = test$p.value),
+    structure(list(tissue = tissue,
+                   background = totalBackground,
+                   observations = observations,
+                   test = test,
+                   clusterSizes = table(unlist(map(length, clust)))),
               class = 'compensation')
 }
 
 print.compensation <- function (x, ...) {
-    cat('Frequencies of cluster sizes for analysis:')
+    cat(sprintf('Frequencies of cluster sizes for analysis of %s:', x$tissue))
     print(x$clusterSizes)
-    cat(sprintf('\np-value = %0.5f (ks.test)\n', x$p.value))
+    cat(sprintf('\np-value = %0.5f (ks.test)\n', x$test$p.value))
     x
+}
+
+plot.compensation <- function (x, ...) {
+    hist(x$background, breaks = 25, col = 'grey', border = 'grey',
+         main = 'Background distribution of correlations',
+         xlab = 'Correlation coefficient',
+         ylab = 'Frequency of correlation coefficient')
+    invisible(map(fun(x = abline(v = x, col = colors[1])), x$observations))
+    par(usr = c(0, 1, 0, 1))
+    text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
+    text(1, 0.1, bquote(italic(p) == .(sprintf('%0.3f', x$test$p.value))),
+         col = colors[1], pos = 2)
+}
+
+plotHistAndDensity <- function (correlations, breaks = 25, ...) {
+    hist(correlations, breaks = breaks, freq = FALSE, col = 'grey', border = 'grey',
+         xlab = 'Correlation coefficient', ylim = c(0, 1))
+    lines(density(correlations), lwd = 2, col = colors[1])
+}
+
+hist.compensation <- function (x, ...) {
+    trnaAcceptorCor <- sapply(as.character(unique(trnaAnnotation$Acceptor)),
+                              isoacceptorCorrelations, x$tissue)
+    negCorAcceptors <- names(which(x$observations < -0.5))
+    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
+                        negCorAcceptors) %|% unlist
+
+    plotHistAndDensity(correlations, ...)
+}
+
+antihist <- function (x) {
+    allAcceptors <-as.character(unique(trnaAnnotation$Acceptor))
+    trnaAcceptorCor <- sapply(allAcceptors, isoacceptorCorrelations, x$tissue)
+    negCorAcceptors <- names(which(x$observations < -0.5))
+    use <- setdiff(allAcceptors, negCorAcceptors)
+    use <- filter(fun(x = ! is.null(trnaAcceptorCor[[x]])), use)
+    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
+                        use) %|% unlist
+
+    plotHistAndDensity(correlations)
+}
+
+chisq.test.compensation2 <- function (x) {
+    bg <- table(x$background)
+    obs <- table(x$observations)
+
+    contingency <- rbind(as.vector(bg), rep(0, length(bg)))
+    contingency[2, match(names(obs), names(bg))] <- as.vector(obs)
+    chisq.test(contingency[2, ], p = contingency[1, ] / sum(contingency[1, ]))
+}
+
+chisq.test.default <- stats::chisq.test
+
+chisq.test <- function (x, ...) UseMethod('chisq.test')
+
+plot.compensation2 <- function (x, col = c('gray', 'red'), ...) {
+    plot(density(x$background, adjust = 1.2), col = col[1], ...)
+    lines(density(x$observations, adjust = 1.2), col = col[2], ...)
+    text(0, 0.2, x$acceptor)
+    test <- chisq.test(x)
+    text(0, 0.1, bquote(italic(p) == .(sprintf('%0.2f', test$p.value))))
 }
 
 if (! interactive()) {
@@ -147,5 +180,89 @@ if (! interactive()) {
 
     mkdir('plots/compensation')
     set.seed(123)
-    map(compensationAnalysis, tissues)
+    (compensationData <- map(compensationAnalysis, tissues))
+
+    # Rerun analysis to analyse spread of results.
+
+    compensationFile <- '../common/cache/compensation.RData'
+    suppressWarnings(loaded <- tryCatch(load(compensationFile), error = .('')))
+
+    if (! isTRUE(all.equal(loaded, c('compensationReplication')))) {
+        map(fun(tissue = map(fun(. = compensationAnalysis(tissue)),
+                1 : 20)), tissues) -> compensationReplication
+        save(compensationReplication, file = compensationFile)
+    }
+
+    for (codon in c('CAG', 'AGT', 'GCC')) {
+        map(fun(tissue = {
+            on.exit(dev.off())
+            pdf(sprintf('plots/compensation/%s-%s.pdf', tissue, codon))
+            plotExpressionChange(codon, tissue)
+        }), tissues) %|% invisible
+    }
+
+    map(fun(x = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/compensation/%s-correlations.pdf', x$tissue),
+            width = 8, height = 4, family = plotFamily)
+        par(mfrow = c(1, 2))
+        hist(x)
+        antihist(x)
+    }), compensationData) %|% invisible
+
+    map(fun(x = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/compensation/%s.pdf', tissue), family = plotFamily)
+        plot(x)
+    }), compensationData) %|% invisible
+
+    codons <- setNames(map(fun(x = names(x$observations)[x$observations < 0]),
+                           compensationData), NULL)
+    differentCodons <- do.call(setdiff, codons)
+    sharedCodons <- do.call(intersect, codons)
+    table(geneticCode[differentCodons, ])
+    table(geneticCode[sharedCodons, ])
+
+    # Alternative analysis: pairwise gene correlations, no clusters.
+
+    tissue <- 'liver'
+    allTests <- setNames(map(fun(acceptor = {
+        correlations <- isoacceptorCorrelations(acceptor, tissue)
+        if (is.null(correlations))
+            return()
+        correlations <- correlations[upper.tri(correlations)]
+
+        geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
+        cols <- tissueCols(tissue)
+        genes <- trnaNormDataCond[geneIds, cols]
+
+        permutations <- permn(ncol(genes))
+
+        permCor <- function (genes, gene, perm)
+            map(fun(other = cor(as.numeric(genes[gene, ]),
+                                as.numeric(genes[other, perm]),
+                                method = 'spearman')),
+                (1 : nrow(genes))[-gene])
+
+        map(fun(gene = map(fun(p = permCor(genes, gene, p)), permutations)),
+            1 : nrow(genes)) -> background
+
+        cat('.')
+        structure(list(acceptor = acceptor,
+                       observations = correlations,
+                       background = unlist(background)),
+                  class = 'compensation2')
+    }), unique(trnaAnnotation$Acceptor)), unique(trnaAnnotation$Acceptor))
+    cat('\n')
+
+    allTests <- filter(neg(is.null), allTests)
+
+    local({
+        on.exit(dev.off())
+        pdf('plots/compensation/all-density.pdf', height = 10, width = 12, family = plotFamily)
+        par(mfrow = c(8, 6), oma = rep(0, 4), mar = rep(0, 4))
+        invisible(map(p(plot, col = c('gray', colors[1]), lwd = 2), allTests))
+    })
+
+    pvalues <- unlist(map(item('p.value') %.% chisq.test, allTests))
 }
