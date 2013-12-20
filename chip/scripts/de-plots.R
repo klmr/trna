@@ -12,7 +12,7 @@ trnaPlotCountMatrix <- function () {
             family = plotFamily)
         plotCountMatrix(data, 'Number of differentially expressed genes')
     }
-    mapply(plotSingle, categories, names(categories))
+    invisible(map(plotSingle, categories, names(categories)))
 }
 
 if (! interactive()) {
