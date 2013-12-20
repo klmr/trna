@@ -1,16 +1,12 @@
 source('../common/scripts/basic.R')
 source('scripts/load-data.R')
 
-trnaPairwiseDiffentialExpression <- function () {
-    if (exists('trnaDeGenes'))
-        return()
-
-    threshold <- 0.05
+pairwiseDifferentialExpression <- function (data, threshold) {
+    require(DESeq2)
 
     cond <- function (x) sprintf('%s-%s', tissue, stages[x])
     contrast <- function (i, j) sprintf('%s/%s', cond(i), cond(j))
 
-    # Declares stageList[stage][otherStage] = NULL for all stages
     stageList <- map(.(map(.(NULL), stages)), stages)
     deResults <- list(liver = stageList, brain = stageList)
     deGenes <- list()
@@ -24,7 +20,17 @@ trnaPairwiseDiffentialExpression <- function () {
     for (tissue in tissues) {
         for (i in 1 : (length(stages) - 1)) {
             for (j in (i + 1) : length(stages)) {
-                result <- nbinomTest(trnaCds, cond(i), cond(j))
+                testContrast <- c(cond(i), cond(j))
+                testLibraries <- rownames(subset(trnaMapping,
+                                                 Condition %in% testContrast))
+                contrastData <- data[, testLibraries]
+                condition <- factor(trnaMapping[testLibraries, 'Condition'],
+                                    testContrast)
+                cds <- DESeqDataSetFromMatrix(contrastData,
+                                              data.frame(condition = condition),
+                                              ~ condition)
+                cds <- suppressMessages(DESeq(cds))
+                result <- results(cds)
                 significant <- subset(result, ! is.na(padj) & padj < threshold)
                 deResults[[tissue]][[stages[i]]][[stages[j]]] <- result
                 deGenes[[contrast(i, j)]] <- significant
@@ -35,9 +41,29 @@ trnaPairwiseDiffentialExpression <- function () {
         }
     }
 
-    trnaDeResults <<- deResults
-    trnaDeGenes <<- deGenes
-    trnaDeCounts <<- deCounts
+    list(results = deResults, de = deGenes, counts = deCounts)
+}
+
+trnaPairwiseDiffentialExpression <- function () {
+    if (exists('trnaDeGenes'))
+        return()
+
+    results <- pairwiseDifferentialExpression(trnaRawCounts, 0.05)
+
+    trnaDeResults <<- results$results
+    trnaDeGenes <<- results$de
+    trnaDeCounts <<- results$counts
+}
+
+trnaDetailedDe <- function () {
+    if (exists('trnaAccDe'))
+        return()
+
+    getData <- function (x) groupby(trnaRawCounts, trnaAnnotation[[x]])
+
+    data <- map(getData, c('Acceptor', 'Type'))
+    trnaAccDe <<- pairwiseDifferentialExpression(data$Acceptor, 0.05)
+    trnaTypeDe <<- pairwiseDifferentialExpression(data$Type, 0.05)
 }
 
 trnaTissueDifferentialExpression <- function () {

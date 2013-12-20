@@ -2,9 +2,17 @@ source('scripts/de.R')
 
 trnaPlotCountMatrix <- function () {
     mkdir('plots/de')
-    on.exit(dev.off())
-    pdf('plots/de/counts.pdf', width = 7, height = 6, family = plotFamily)
-    plotCountMatrix(trnaDeCounts, 'Number of differentially expressed genes')
+    categories <- list(genes = trnaDeCounts,
+                       acc = trnaAccDe$counts,
+                       type = trnaTypeDe$counts)
+
+    plotSingle <- function (data, name) {
+        on.exit(dev.off())
+        pdf(sprintf('plots/de/%s-counts.pdf', name), width = 7, height = 6,
+            family = plotFamily)
+        plotCountMatrix(data, 'Number of differentially expressed genes')
+    }
+    invisible(map(plotSingle, categories, names(categories)))
 }
 
 if (! interactive()) {
@@ -12,5 +20,6 @@ if (! interactive()) {
     trnaLoadData()
     trnaSetupCountDataSet()
     trnaPairwiseDiffentialExpression()
+    trnaDetailedDe()
     trnaPlotCountMatrix()
 }

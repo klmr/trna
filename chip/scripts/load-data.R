@@ -82,7 +82,7 @@ getExpressedtRNAs <- function (counts) {
 # Normalized count data {{{
 trnaGetCountDataSet <- function (data) {
     require(DESeq)
-    cds <- newCountDataSet(data, trnaMapping$Condition)
+    cds <- newCountDataSet(data, trnaMapping[colnames(data), 'Condition'])
     cds <- estimateSizeFactors(cds)
     cds
 }

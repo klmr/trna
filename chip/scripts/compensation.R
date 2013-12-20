@@ -226,6 +226,7 @@ if (! interactive()) {
     # Alternative analysis: pairwise gene correlations, no clusters.
 
     tissue <- 'liver'
+    testSet <- unique(trnaAnnotation$Acceptor)
     allTests <- setNames(map(fun(acceptor = {
         correlations <- isoacceptorCorrelations(acceptor, tissue)
         if (is.null(correlations))
@@ -252,7 +253,7 @@ if (! interactive()) {
                        observations = correlations,
                        background = unlist(background)),
                   class = 'compensation2')
-    }), unique(trnaAnnotation$Acceptor)), unique(trnaAnnotation$Acceptor))
+    }), testSet), testSet)
     cat('\n')
 
     allTests <- filter(neg(is.null), allTests)
