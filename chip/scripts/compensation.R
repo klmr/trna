@@ -229,7 +229,10 @@ if (! interactive()) {
         on.exit(dev.off())
         pdf('plots/compensation/all-density.pdf', height = 10, width = 12, family = plotFamily)
         par(mfrow = c(8, 6), oma = rep(0, 4), mar = rep(0, 4))
-        invisible(map(p(plot, col = c('gray', colors[1]), lwd = 2), compensationData))
+        invisible(map(p(plot, col = c('gray', colors[1]), lwd = 2,
+                        xlim = c(-1, 1), ylim = c(0, 1), bty = 'n', main = '',
+                        xaxt = 'n', yaxt = 'n'),
+                      compensationData))
     })
 
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
