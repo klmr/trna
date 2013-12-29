@@ -193,7 +193,8 @@ if (! interactive()) {
 
     tissue <- 'liver'
     testSet <- unique(trnaAnnotation$Acceptor)
-    compensationData <- setNames(map(fun(acceptor = {
+    progress(0, length(testSet))
+    compensationData <- setNames(map(fun(acceptor, i = {
         correlations <- isoacceptorCorrelations(acceptor, tissue)
         if (is.null(correlations))
             return()
@@ -214,13 +215,13 @@ if (! interactive()) {
         map(fun(gene = map(fun(p = permCor(genes, gene, p)), permutations)),
             1 : nrow(genes)) -> background
 
-        cat('.')
+        progress(i, length(testSet))
         structure(list(acceptor = acceptor,
                        observations = correlations,
                        background = unlist(background)),
                   class = 'compensation2')
-    }), testSet), testSet)
-    cat('\n')
+    }), testSet, indices(testSet)), testSet)
+    progress(1, 1)
 
     compensationData <- filter(neg(is.null), compensationData)
 
