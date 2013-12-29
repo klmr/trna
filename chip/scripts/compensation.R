@@ -181,7 +181,10 @@ if (! interactive()) {
 
     mkdir('plots/compensation')
 
-    for (codon in c('CAG', 'AGT', 'GCC')) {
+    # Plot two examples for publication.
+    examples <- c('CAG', 'GCC')
+
+    for (codon in examples) {
         map(fun(tissue = {
             on.exit(dev.off())
             pdf(sprintf('plots/compensation/%s-%s.pdf', tissue, codon))
@@ -193,7 +196,8 @@ if (! interactive()) {
 
     tissue <- 'liver'
     testSet <- unique(trnaAnnotation$Acceptor)
-    compensationData <- setNames(map(fun(acceptor = {
+    progress(0, length(testSet))
+    compensationData <- setNames(map(fun(acceptor, i = {
         correlations <- isoacceptorCorrelations(acceptor, tissue)
         if (is.null(correlations))
             return()
@@ -214,13 +218,13 @@ if (! interactive()) {
         map(fun(gene = map(fun(p = permCor(genes, gene, p)), permutations)),
             1 : nrow(genes)) -> background
 
-        cat('.')
+        progress(i, length(testSet))
         structure(list(acceptor = acceptor,
                        observations = correlations,
                        background = unlist(background)),
                   class = 'compensation2')
-    }), testSet), testSet)
-    cat('\n')
+    }), testSet, indices(testSet)), testSet)
+    progress(1, 1)
 
     compensationData <- filter(neg(is.null), compensationData)
 
@@ -228,8 +232,22 @@ if (! interactive()) {
         on.exit(dev.off())
         pdf('plots/compensation/all-density.pdf', height = 10, width = 12, family = plotFamily)
         par(mfrow = c(8, 6), oma = rep(0, 4), mar = rep(0, 4))
-        invisible(map(p(plot, col = c('gray', colors[1]), lwd = 2), compensationData))
+        invisible(map(p(plot, col = c('gray', colors[1]), lwd = 2,
+                        xlim = c(-1, 1), ylim = c(0, 1), bty = 'n', main = '',
+                        xaxt = 'n', yaxt = 'n'),
+                      compensationData))
     })
+
+    for (codon in examples) {
+        local({
+            on.exit(dev.off())
+            pdf(sprintf('plots/compensation/evidence-%s.pdf', codon))
+            plot(compensationData[[codon]], col = c('gray', colors[1]), lwd = 2,
+                 xlim = c(-1, 1), ylim = c(0, 1),
+                 xlab = 'Correlation coefficient',
+                 main = paste('Compensation test for', codon))
+        })
+    }
 
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
 }
