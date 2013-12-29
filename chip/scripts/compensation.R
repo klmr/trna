@@ -181,7 +181,10 @@ if (! interactive()) {
 
     mkdir('plots/compensation')
 
-    for (codon in c('CAG', 'AGT', 'GCC')) {
+    # Plot two examples for publication.
+    examples <- c('CAG', 'GCC')
+
+    for (codon in examples) {
         map(fun(tissue = {
             on.exit(dev.off())
             pdf(sprintf('plots/compensation/%s-%s.pdf', tissue, codon))
@@ -234,6 +237,17 @@ if (! interactive()) {
                         xaxt = 'n', yaxt = 'n'),
                       compensationData))
     })
+
+    for (codon in examples) {
+        local({
+            on.exit(dev.off())
+            pdf(sprintf('plots/compensation/evidence-%s.pdf', codon))
+            plot(compensationData[[codon]], col = c('gray', colors[1]), lwd = 2,
+                 xlim = c(-1, 1), ylim = c(0, 1),
+                 xlab = 'Correlation coefficient',
+                 main = paste('Compensation test for', codon))
+        })
+    }
 
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
 }
