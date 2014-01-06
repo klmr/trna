@@ -238,16 +238,14 @@ if (! interactive()) {
                       compensationData))
     })
 
-    for (codon in examples) {
-        local({
+    map(fun(codon = {
             on.exit(dev.off())
             pdf(sprintf('plots/compensation/evidence-%s.pdf', codon))
             plot(compensationData[[codon]], col = c('gray', colors[1]), lwd = 2,
                  xlim = c(-1, 1), ylim = c(0, 1),
                  xlab = 'Correlation coefficient',
                  main = paste('Compensation test for', codon))
-        })
-    }
+        }), codons)
 
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
 }
