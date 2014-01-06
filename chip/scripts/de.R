@@ -17,9 +17,13 @@ pairwiseDifferentialExpression <- function (data, threshold) {
                       .Dimnames = list(stages, stages))
     deCounts <- list(liver = sigC, brain = sigC)
 
+    maxProgress <- length(tissues) * (length(stages) ^ 2 - length(stages)) / 2
+    currentProgress <- 0
     for (tissue in tissues) {
         for (i in 1 : (length(stages) - 1)) {
             for (j in (i + 1) : length(stages)) {
+                progress(currentProgress, maxProgress)
+                currentProgress <- currentProgress + 1
                 testContrast <- c(cond(i), cond(j))
                 testLibraries <- rownames(subset(trnaMapping,
                                                  Condition %in% testContrast))
@@ -40,6 +44,7 @@ pairwiseDifferentialExpression <- function (data, threshold) {
             }
         }
     }
+    progress(currentProgress, maxProgress)
 
     list(results = deResults, de = deGenes, counts = deCounts)
 }
