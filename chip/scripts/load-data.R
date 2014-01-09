@@ -47,7 +47,6 @@ trnaLoadData <- function () {
     trnaMapping <<- trnaMapping
 
     # Filter out unexpressed tRNAs
-    require(DESeq)
     normCounts <- counts(trnaGetCountDataSet(trnaRawCounts), normalized = TRUE)
     expressed <- getExpressedtRNAs(normCounts)
 
@@ -83,8 +82,7 @@ getExpressedtRNAs <- function (counts) {
 trnaGetCountDataSet <- function (data) {
     require(DESeq)
     cds <- newCountDataSet(data, trnaMapping[colnames(data), 'Condition'])
-    cds <- estimateSizeFactors(cds)
-    cds
+    estimateSizeFactors(cds)
 }
 
 trnaSetupCountDataSet <- function () {
@@ -92,13 +90,6 @@ trnaSetupCountDataSet <- function () {
         return()
 
     trnaCds <<- estimateDispersions(trnaGetCountDataSet(trnaRawCounts))
-    ## DESeq doesn't find locfit::lp otherwise.
-    #lp <<- locfit::lp
-    #trnaCds <<- estimateDispersions(trnaGetCountDataSet(trnaRawCounts),
-    #                                method = 'pooled', fitType = 'local')
-
-    # Restore it.
-    #lp <<- lpartial
 }
 
 trnaNormalizeData <- function () {
