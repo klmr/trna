@@ -6,7 +6,7 @@ mrnaPairwiseDifferentialExpression <- function () {
     if (exists('mrnaDeGenes'))
         return()
 
-    deGenesFile <- '../common/cache/de-genes.RData'
+    deGenesFile <- '../common/cache/mrna-de-genes.RData'
     mkdir('../common/cache')
 
     suppressWarnings(loaded <- tryCatch(load(deGenesFile), error = .('')))
