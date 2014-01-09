@@ -252,7 +252,6 @@ if (! interactive()) {
     plotSpiderWeb()
 
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaNormalizeData()
     local({
         oldwd <- getwd(); on.exit(setwd(oldwd))

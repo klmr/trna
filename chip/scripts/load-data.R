@@ -47,6 +47,7 @@ trnaLoadData <- function () {
     trnaMapping <<- trnaMapping
 
     # Filter out unexpressed tRNAs
+    require(DESeq) # Necessary for `counts` even though it’s loaded anyway.
     normCounts <- counts(trnaGetCountDataSet(trnaRawCounts), normalized = TRUE)
     expressed <- getExpressedtRNAs(normCounts)
 

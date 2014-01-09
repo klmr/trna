@@ -174,7 +174,7 @@ plot.compensation2 <- function (x, col = c('gray', 'red'), ...) {
 }
 
 if (! interactive()) {
-    cat('# Generating compensation analysis plots')
+    cat('# Generating compensation analysis plots\n')
     trnaLoadData()
     trnaSetupCountDataSet()
     trnaNormalizeData()
@@ -245,7 +245,7 @@ if (! interactive()) {
                  xlim = c(-1, 1), ylim = c(0, 1),
                  xlab = 'Correlation coefficient',
                  main = paste('Compensation test for', codon))
-        }), codons)
+        }), examples)
 
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
 }
