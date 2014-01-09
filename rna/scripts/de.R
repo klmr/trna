@@ -14,7 +14,7 @@ mrnaPairwiseDifferentialExpression <- function () {
     if (! identical(loaded, 'mrnaDeData')) {
         cat('Cache file not found -- re-generating DE gene lists.\n')
 
-        mrnaDeData <- pairwiseDifferentialExpression(mrnaRawCounts, mrnaMapping, 0.05)
+        mrnaDeData <- pairwiseDifferentialExpression(mrnaRawCounts, mrnaMapping, fdrThreshold)
         save(mrnaDeData, file = deGenesFile)
     }
 
