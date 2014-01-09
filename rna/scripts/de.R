@@ -1,4 +1,5 @@
 source('../common/scripts/basic.R')
+source('../common/scripts/de.R')
 source('scripts/load-data.R')
 
 mrnaPairwiseDifferentialExpression <- function () {
