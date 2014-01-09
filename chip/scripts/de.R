@@ -1,21 +1,21 @@
 source('../common/scripts/basic.R')
 source('scripts/load-data.R')
 
-pairwiseDifferentialExpression <- function (data, threshold) {
+pairwiseDifferentialExpression <- function (data, mapping, threshold) {
     require(DESeq2)
 
     cond <- function (x) sprintf('%s-%s', tissue, stages[x])
     contrast <- function (i, j) sprintf('%s/%s', cond(i), cond(j))
 
     stageList <- map(.(map(.(NULL), stages)), stages)
-    deResults <- list(liver = stageList, brain = stageList)
-    deGenes <- list()
+    results <- list(liver = stageList, brain = stageList)
+    de <- list()
 
     # Declares a pairwise matrix of counts for all stages
     sigC <- structure(rep(NA, length(stages) ^ 2),
                       .Dim = c(length(stages), length(stages)),
                       .Dimnames = list(stages, stages))
-    deCounts <- list(liver = sigC, brain = sigC)
+    counts <- list(liver = sigC, brain = sigC)
 
     maxProgress <- length(tissues) * (length(stages) ^ 2 - length(stages)) / 2
     currentProgress <- 0
@@ -25,10 +25,10 @@ pairwiseDifferentialExpression <- function (data, threshold) {
                 progress(currentProgress, maxProgress)
                 currentProgress <- currentProgress + 1
                 testContrast <- c(cond(i), cond(j))
-                testLibraries <- rownames(subset(trnaMapping,
+                testLibraries <- rownames(subset(mapping,
                                                  Condition %in% testContrast))
                 contrastData <- data[, testLibraries]
-                condition <- factor(trnaMapping[testLibraries, 'Condition'],
+                condition <- factor(mapping[testLibraries, 'Condition'],
                                     testContrast)
                 cds <- DESeqDataSetFromMatrix(contrastData,
                                               data.frame(condition = condition),
@@ -36,24 +36,24 @@ pairwiseDifferentialExpression <- function (data, threshold) {
                 cds <- suppressMessages(DESeq(cds))
                 result <- results(cds)
                 significant <- subset(result, ! is.na(padj) & padj < threshold)
-                deResults[[tissue]][[stages[i]]][[stages[j]]] <- result
-                deGenes[[contrast(i, j)]] <- significant
+                results[[tissue]][[stages[i]]][[stages[j]]] <- result
+                de[[contrast(i, j)]] <- significant
                 # The matrix is symmetric
-                deCounts[[tissue]][i, j] <- nrow(significant)
-                deCounts[[tissue]][j, i] <- nrow(significant)
+                counts[[tissue]][i, j] <- nrow(significant)
+                counts[[tissue]][j, i] <- nrow(significant)
             }
         }
     }
     progress(currentProgress, maxProgress)
 
-    list(results = deResults, de = deGenes, counts = deCounts)
+    list(results = results, de = de, counts = counts)
 }
 
 trnaPairwiseDiffentialExpression <- function () {
     if (exists('trnaDeGenes'))
         return()
 
-    results <- pairwiseDifferentialExpression(trnaRawCounts, 0.05)
+    results <- pairwiseDifferentialExpression(trnaRawCounts, trnaMapping, 0.05)
 
     trnaDeResults <<- results$results
     trnaDeGenes <<- results$de
@@ -67,8 +67,8 @@ trnaDetailedDe <- function () {
     getData <- function (x) groupby(trnaRawCounts, trnaAnnotation[[x]])
 
     data <- map(getData, c('Acceptor', 'Type'))
-    trnaAccDe <<- pairwiseDifferentialExpression(data$Acceptor, 0.05)
-    trnaTypeDe <<- pairwiseDifferentialExpression(data$Type, 0.05)
+    trnaAccDe <<- pairwiseDifferentialExpression(data$Acceptor, trnaMapping, 0.05)
+    trnaTypeDe <<- pairwiseDifferentialExpression(data$Type, trnaMapping, 0.05)
 }
 
 trnaTissueDifferentialExpression <- function () {
