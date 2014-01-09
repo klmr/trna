@@ -139,7 +139,6 @@ if (! interactive()) {
     trnaSetupCountDataSet()
     trnaPairwiseDiffentialExpression()
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaPairwiseDifferentialExpression()
 
     testColocalization()

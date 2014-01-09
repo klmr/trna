@@ -10,7 +10,6 @@ mrnaPlotCountMatrix <- function () {
 if (! interactive()) {
     cat('# Generating heatmap of number of DE mRNA genes\n')
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaPairwiseDifferentialExpression()
     mrnaPlotCountMatrix()
 }

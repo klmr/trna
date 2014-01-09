@@ -2,7 +2,6 @@ source('../common/scripts/basic.R')
 source('scripts/load-data.R')
 
 mrnaLoadData()
-mrnaSetupCountDataSet()
 mrnaNormalizeData()
 
 idx <- grep('Polr3g', mrnaAnnotation$Name)

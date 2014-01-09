@@ -22,7 +22,6 @@ mrnaWriteDeGenes <- function () {
 if (! interactive()) {
     cat('# Generating protein-coding DE gene lists\n')
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaPairwiseDifferentialExpression()
     mrnaWriteDeGenes()
 }

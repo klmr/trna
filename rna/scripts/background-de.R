@@ -42,7 +42,6 @@ reportDeGenesAcrossStages <- function () {
 
 if (! interactive()) {
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaNormalizeData()
 
     reportDeGenesAcrossStages()
