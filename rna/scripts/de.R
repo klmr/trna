@@ -10,56 +10,14 @@ mrnaPairwiseDifferentialExpression <- function () {
 
     suppressWarnings(loaded <- tryCatch(load(deGenesFile), error = .('')))
 
-    if (! isTRUE(all.equal(loaded, c('mrnaDeGenes', 'mrnaDeResults')))) {
+    if (! identical(loaded, 'mrnaDeData')) {
         cat('Cache file not found -- re-generating DE gene lists.\n')
 
-        contrastFor <- function (t, s) sprintf('%s-%s', t, s)
-        threshold <- 0.05
-        # Declares stageList[stage][otherStage] = NULL for all stages
-        stageList <- map(.(map(.(NULL), stages)), stages)
-        mrnaDeGenes <- list(liver = stageList, brain = stageList)
-        mrnaDeResults <- mrnaDeGenes
-
-        maxProgress <- length(tissues) * (length(stages) ^ 2 - length(stages)) / 2
-        currentProgress <- 0
-
-        for (tissue in tissues) {
-            for (i in 1 : (length(stages) - 1)) {
-                for (j in (i + 1) : length(stages)) {
-                    progress(currentProgress, maxProgress)
-                    currentProgress <- currentProgress + 1
-                    a <- contrastFor(tissue, stages[i])
-                    b <- contrastFor(tissue, stages[j])
-                    result <- nbinomTest(mrnaCds, a, b)
-                    de <- subset(result, ! is.na(padj) & padj < threshold)
-                    mrnaDeResults[[tissue]][[stages[i]]][[stages[j]]] <- result
-                    mrnaDeGenes[[tissue]][[stages[i]]][[stages[j]]] <- de
-                    cat('.')
-                }
-            }
-        }
-        progress(currentProgress, maxProgress)
-
-        save(mrnaDeGenes, mrnaDeResults, file = deGenesFile)
+        mrnaDeData <- pairwiseDifferentialExpression(mrnaRawCounts, mrnaMapping, 0.05)
+        save(mrnaDeData, file = deGenesFile)
     }
 
-    sigC <- matrix(nrow = length(stages), ncol = length(stages))
-    mrnaDeCount <- list(liver = sigC, brain = sigC)
-
-    for (tissue in tissues) {
-        for (i in 1 : (length(stages) - 1)) {
-            for (j in (i + 1) : length(stages)) {
-                de <- mrnaDeGenes[[tissue]][[stages[i]]][[stages[j]]]
-                mrnaDeCount[[tissue]][i, j] <- nrow(de)
-                mrnaDeCount[[tissue]][j, i] <- nrow(de)
-            }
-        }
-    }
-
-    setNames <- function (cnt) `colnames<-`(`rownames<-`(cnt, stages), stages)
-    mrnaDeCount <- lapply(mrnaDeCount, setNames)
-
-    mrnaDeResults <<- mrnaDeResults
-    mrnaDeGenes <<- mrnaDeGenes
-    mrnaDeCount <<- mrnaDeCount
+    mrnaDeResults <<- mrnaDeData$results
+    mrnaDeGenes <<- mrnaDeData$de
+    mrnaDeCount <<- mrnaDeData$counts
 }
