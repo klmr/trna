@@ -25,7 +25,7 @@ mrnaLoadData <- function () {
     nonMitochondrial <- ! boolmask(grep('^MT:\\d+..\\d+$', mrnaAnnotation$locus), nr)
     nonFragment <- ! boolmask(grep('^NT_\\d+:\\d+..\\d+$', mrnaAnnotation$locus), nr)
     nonSex <- ! boolmask(grep('^[XY]:', mrnaAnnotation$locus), nr)
-    proteinCoding <- mrnaAnnotation$source == 'protein_coding'
+    proteinCoding <- grepl('protein_coding', mrnaAnnotation$source, fixed = TRUE)
     mrnaAnnotation <- mrnaAnnotation[nonMitochondrial & nonFragment & nonSex & proteinCoding, ]
     mrnaAnnotation$source <- NULL
     mrnaAnnotation$Chr <- sub(':.*', '', mrnaAnnotation$locus)
@@ -40,23 +40,13 @@ mrnaLoadData <- function () {
     mrnaAnnotation <<- mrnaAnnotation
 }
 
-mrnaSetupCountDataSet <- function () {
-    if (exists('mrnaCds'))
-        return()
-
-    require(DESeq)
-    dataDE <- mrnaRawCounts
-    mrnaCds <- newCountDataSet(dataDE, mrnaMapping$Condition)
-    mrnaCds <- estimateSizeFactors(mrnaCds)
-    mrnaCds <- estimateDispersions(mrnaCds)
-
-    mrnaCds <<- mrnaCds
-}
-
 mrnaNormalizeData <- function () {
     if (exists('mrnaNormData'))
         return()
 
+    require(DESeq)
+    mrnaCds <- newCountDataSet(mrnaRawCounts, mrnaMapping$Condition)
+    mrnaCds <- estimateSizeFactors(mrnaCds)
     mrnaNormData <- as.data.frame(counts(mrnaCds, normalized = TRUE))
     conditions <- unique(mrnaMapping$Condition)
 
@@ -64,6 +54,8 @@ mrnaNormalizeData <- function () {
     colnames(mrnaNormDataCond) <- conditions
     rownames(mrnaNormDataCond) <- rownames(mrnaNormData)
 
+    # Same as `t(groupby(t(mrnaNormData), mrnaMapping$Condition, mean))` but
+    # much faster. I need a transposed version of that function.
     for (cond in conditions) {
         replicates <- mrnaNormData[, rownames(mrnaMapping[mrnaMapping$Condition == cond, ])]
         if (! is.data.frame(replicates))

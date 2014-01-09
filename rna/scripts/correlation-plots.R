@@ -96,7 +96,6 @@ plotCodonBackground <- function () {
 if (! interactive()) {
     cat('# Generating mRNA codon usage data\n')
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaNormalizeData()
     generateCodonUsageData()
     loadAminoAcids()

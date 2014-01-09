@@ -22,7 +22,6 @@ output <- 'plots/distribution'
 if (! interactive()) {
     cat('# Generating heatmap and PCA of mRNA expression correlation\n')
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaNormalizeData()
 
     mkdir(output)

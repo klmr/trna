@@ -22,7 +22,6 @@ mrnaWriteConditions <- function () {
 if (! interactive()) {
     cat('# Writing annotation for protein-coding genes\n')
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaNormalizeData()
 
     mkdir('results')

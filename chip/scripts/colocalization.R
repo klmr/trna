@@ -11,6 +11,9 @@ local({
 setdiff.data.frame <- function (x, y)
     x[setdiff(rownames(x), rownames(y)), ]
 
+# For DESeq3’s new result object
+setdiff.DataFrame <- setdiff.data.frame
+
 setdiff.default <- setdiff
 
 setdiff <- function (x, y)
@@ -27,13 +30,14 @@ colocalizationForContrast <- function (tissue, a, b, threshold, windowSize) {
     getDe <- function (data) subset(data, ! is.na(padj) & padj <= threshold)
 
     annotate <- function (data, annotation)
-        annotation[data$id, c('Chr', 'Start', 'End')]
+        let(selector = if (is.null(data$id)) rownames else item('id'),
+            annotation[selector(data), c('Chr', 'Start', 'End')])
 
     prepare <- function (data, annotation) {
         all <- data[[tissue]][[a]][[b]]
         de <- getDe(all)
-        up <- subset(de, foldChange < 1)
-        down <- subset(de, foldChange > 1)
+        up <- subset(de, log2FoldChange < 0)
+        down <- subset(de, log2FoldChange > 0)
         no <- setdiff(all, de)
         lapply(list(all = all, de = de, up = up, down = down, no = no),
                annotate, annotation)
@@ -107,9 +111,13 @@ testColocalization <- function () {
     stages <- list(liver = c('e15.5', 'P22'), brain = c('P4', 'P29'))
     path <- 'plots/colocalization'
     mkdir(path)
+    maxProgress <- length(tissues) * 3 * 3
+    currentProgress <- 0
     for (tissue in tissues) {
         for (threshold in c(0.1, 0.05, 0.01)) {
             for (windowSize in c(10000, 50000, 100000)) {
+                progress(currentProgress, maxProgress)
+                currentProgress <- currentProgress + 1
                 stage <- stages[[tissue]]
                 stat <- colocalizationForContrast(tissue, stage[1], stage[2],
                                                   threshold, windowSize)
@@ -122,6 +130,7 @@ testColocalization <- function () {
             }
         }
     }
+    progress(currentProgress, maxProgress)
 }
 
 if (! interactive()) {
@@ -130,7 +139,6 @@ if (! interactive()) {
     trnaSetupCountDataSet()
     trnaPairwiseDiffentialExpression()
     mrnaLoadData()
-    mrnaSetupCountDataSet()
     mrnaPairwiseDifferentialExpression()
 
     testColocalization()
