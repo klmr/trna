@@ -25,7 +25,7 @@ mrnaLoadData <- function () {
     nonMitochondrial <- ! boolmask(grep('^MT:\\d+..\\d+$', mrnaAnnotation$locus), nr)
     nonFragment <- ! boolmask(grep('^NT_\\d+:\\d+..\\d+$', mrnaAnnotation$locus), nr)
     nonSex <- ! boolmask(grep('^[XY]:', mrnaAnnotation$locus), nr)
-    proteinCoding <- mrnaAnnotation$source == 'protein_coding'
+    proteinCoding <- grepl('protein_coding', mrnaAnnotation$source, fixed = TRUE)
     mrnaAnnotation <- mrnaAnnotation[nonMitochondrial & nonFragment & nonSex & proteinCoding, ]
     mrnaAnnotation$source <- NULL
     mrnaAnnotation$Chr <- sub(':.*', '', mrnaAnnotation$locus)
