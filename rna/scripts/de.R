@@ -11,7 +11,7 @@ mrnaPairwiseDifferentialExpression <- function () {
     suppressWarnings(loaded <- tryCatch(load(deGenesFile), error = .('')))
 
     if (! isTRUE(all.equal(loaded, c('mrnaDeGenes', 'mrnaDeResults')))) {
-        cat('Cache file not found -- re-generating DE gene lists.')
+        cat('Cache file not found -- re-generating DE gene lists.\n')
 
         contrastFor <- function (t, s) sprintf('%s-%s', t, s)
         threshold <- 0.05
@@ -20,9 +20,14 @@ mrnaPairwiseDifferentialExpression <- function () {
         mrnaDeGenes <- list(liver = stageList, brain = stageList)
         mrnaDeResults <- mrnaDeGenes
 
+        maxProgress <- length(tissues) * (length(stages) ^ 2 - length(stages)) / 2
+        currentProgress <- 0
+
         for (tissue in tissues) {
             for (i in 1 : (length(stages) - 1)) {
                 for (j in (i + 1) : length(stages)) {
+                    progress(currentProgress, maxProgress)
+                    currentProgress <- currentProgress + 1
                     a <- contrastFor(tissue, stages[i])
                     b <- contrastFor(tissue, stages[j])
                     result <- nbinomTest(mrnaCds, a, b)
@@ -33,8 +38,8 @@ mrnaPairwiseDifferentialExpression <- function () {
                 }
             }
         }
+        progress(currentProgress, maxProgress)
 
-        cat('done\n')
         save(mrnaDeGenes, mrnaDeResults, file = deGenesFile)
     }
 
