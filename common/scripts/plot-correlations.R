@@ -36,7 +36,8 @@ plotCorrelationsFor <- function (data, main = as.character(substitute(data))) {
     names(col) <- names(tissueColor)
 
     # Use uniform axis limits.
-    lablim <- c(0, max(unlist(data)))
+    labmin <- if (useSample) min(data[data > 0]) else 0
+    lablim <- c(labmin, max(data))
 
     axislabel <- sprintf(if (useSample) 'log(%s)' else '%s', 'Gene expression')
     plotPairwise(stages, plotter('liver'), plotter('brain'), diagonal,
