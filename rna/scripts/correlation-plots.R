@@ -4,7 +4,7 @@ plotRnaCorrelation <- function () {
     methods <- list(gene = mrnaNormDataCond,
                     codon = codonUsageData,
                     aa = aaUsageData)
-    titles <- list(gene = 'Protein-coding gene expression correlation',
+    titles <- list(gene = 'Protein­coding gene expression correlation',
                    codon = 'Codon usage correlation',
                    aa = 'Amino acid usage correlation')
     generateCorrelationPlot <- function (name, data, title) {
