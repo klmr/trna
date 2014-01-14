@@ -88,7 +88,7 @@ plotCodonBackground <- function () {
                           main = 'Codon usage background for all reading frames')
         axispos <- groupby(barpos, geneticCode[sortedCodons, 1], mean)[[1]]
         axis(1, at = axispos, names(groups), tick = FALSE)
-        map(fun(x, col = lines(barpos[, 1], x, col = col)),
+        map(.(x, col = lines(barpos[, 1], x, col = col)),
             data[sortedCodons, -1], colors[indices(data[, -1])])
     })
 }

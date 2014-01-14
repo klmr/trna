@@ -36,7 +36,7 @@ generateCodonUsageData <- function () {
     codonUsageFile <- '../common/cache/codons-usage.RData'
     mkdir('../common/cache')
 
-    suppressWarnings(loaded <- tryCatch(load(codonUsageFile), error = .('')))
+    suppressWarnings(loaded <- tryCatch(load(codonUsageFile), error = .(e = '')))
 
     if (! isTRUE(all.equal(loaded, 'usageData'))) {
         cat('Cache file not found -- re-generating codon usage data.')
@@ -124,11 +124,11 @@ generateCodonBackgroundUsage <- function () {
         return()
     overallCodonBackground <-
         apply(expand.grid(c(1, -1), 0 : 2), ROWS,
-              fun(row = backgroundCodonUsage(row[1], row[2])))
+              .(row = backgroundCodonUsage(row[1], row[2])))
     overallAaBackground <-
-        map(fun(x = groupby(x, geneticCode[rownames(x), 1])),
+        map(.(x = groupby(x, geneticCode[rownames(x), 1])),
             overallCodonBackground)
     overallCodonBackground <<- do.call(cbind, overallCodonBackground)
-    overallAaBackground <<- map(fun(x = x[rownames(x) != 'Stop', , drop = FALSE]),
+    overallAaBackground <<- map(.(x = x[rownames(x) != 'Stop', , drop = FALSE]),
                                 overallAaBackground) %|% lp(do.call, cbind)
 }

@@ -88,12 +88,12 @@ compensationAnalysis <- function (tissue) {
     clusters <- filter(neg(is.null), clusters)
     message('Using ', length(clusters), ' out of ', length(clust), ' isoacceptor families')
 
-    observations <- map(fun(c = cor(c[1, ], c[2, ], method = corMethod)), clusters)
+    observations <- map(.(c = cor(c[1, ], c[2, ], method = corMethod)), clusters)
     observations <- unlist(observations)
     permutations <- uperm(ncol(clusters[[1]]))
-    background <- map(fun(c = apply(permutations, ROWS,
-                                    fun(p = cor(c[1, ], c[2, p],
-                                                method = corMethod)))), clusters)
+    background <- map(.(c = apply(permutations, ROWS,
+                                  .(p = cor(c[1, ], c[2, p],
+                                            method = corMethod)))), clusters)
     totalBackground <- setNames(do.call(c, background), NULL)
     test <- ks.test(observations, totalBackground, alternative = 'greater')
 
@@ -117,7 +117,7 @@ plot.compensation <- function (x, ...) {
          main = 'Background distribution of correlations',
          xlab = 'Correlation coefficient',
          ylab = 'Frequency of correlation coefficient')
-    invisible(map(fun(x = abline(v = x, col = colors[1])), x$observations))
+    invisible(map(.(x = abline(v = x, col = colors[1])), x$observations))
     par(usr = c(0, 1, 0, 1))
     text(1, 0.9, 'Observed\ncorrelations', col = colors[1], pos = 2)
     text(1, 0.1, bquote(italic(p) == .(sprintf('%0.3f', x$test$p.value))),
@@ -134,7 +134,7 @@ hist.compensation <- function (x, ...) {
     trnaAcceptorCor <- sapply(as.character(unique(trnaAnnotation$Acceptor)),
                               isoacceptorCorrelations, x$tissue)
     negCorAcceptors <- names(which(x$observations < -0.5))
-    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
+    correlations <- map(.(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
                         negCorAcceptors) %|% unlist
 
     plotHistAndDensity(correlations, ...)
@@ -145,8 +145,8 @@ antihist <- function (x) {
     trnaAcceptorCor <- sapply(allAcceptors, isoacceptorCorrelations, x$tissue)
     negCorAcceptors <- names(which(x$observations < -0.5))
     use <- setdiff(allAcceptors, negCorAcceptors)
-    use <- filter(fun(x = ! is.null(trnaAcceptorCor[[x]])), use)
-    correlations <- map(fun(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
+    use <- filter(.(x = ! is.null(trnaAcceptorCor[[x]])), use)
+    correlations <- map(.(n = trnaAcceptorCor[[n]][upper.tri(trnaAcceptorCor[[n]])]),
                         use) %|% unlist
 
     plotHistAndDensity(correlations)
@@ -185,7 +185,7 @@ if (! interactive()) {
     examples <- c('CAG', 'GCC')
 
     for (codon in examples) {
-        map(fun(tissue = {
+        map(.(tissue = {
             on.exit(dev.off())
             pdf(sprintf('plots/compensation/%s-%s.pdf', tissue, codon))
             plotExpressionChange(codon, tissue)
@@ -197,7 +197,7 @@ if (! interactive()) {
     tissue <- 'liver'
     testSet <- unique(trnaAnnotation$Acceptor)
     progress(0, length(testSet))
-    compensationData <- setNames(map(fun(acceptor, i = {
+    compensationData <- setNames(map(.(acceptor, i = {
         correlations <- isoacceptorCorrelations(acceptor, tissue)
         if (is.null(correlations))
             return()
@@ -210,12 +210,12 @@ if (! interactive()) {
         permutations <- permn(ncol(genes))
 
         permCor <- function (genes, gene, perm)
-            map(fun(other = cor(as.numeric(genes[gene, ]),
+            map(.(other = cor(as.numeric(genes[gene, ]),
                                 as.numeric(genes[other, perm]),
                                 method = 'spearman')),
                 (1 : nrow(genes))[-gene])
 
-        map(fun(gene = map(fun(p = permCor(genes, gene, p)), permutations)),
+        map(.(gene = map(.(p = permCor(genes, gene, p)), permutations)),
             1 : nrow(genes)) -> background
 
         progress(i, length(testSet))
@@ -238,7 +238,7 @@ if (! interactive()) {
                       compensationData))
     })
 
-    map(fun(codon = {
+    map(.(codon = {
             on.exit(dev.off())
             pdf(sprintf('plots/compensation/evidence-%s.pdf', codon))
             plot(compensationData[[codon]], col = c('gray', colors[1]), lwd = 2,

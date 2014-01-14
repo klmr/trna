@@ -9,7 +9,7 @@ mrnaPairwiseDifferentialExpression <- function () {
     deGenesFile <- '../common/cache/mrna-de-genes.RData'
     mkdir('../common/cache')
 
-    suppressWarnings(loaded <- tryCatch(load(deGenesFile), error = .('')))
+    suppressWarnings(loaded <- tryCatch(load(deGenesFile), error = .(e = '')))
 
     if (! identical(loaded, 'mrnaDeData')) {
         cat('Cache file not found -- re-generating DE gene lists.\n')
