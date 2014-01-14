@@ -1,5 +1,5 @@
 #' @TODO This is currently NOT portable! Switch to modules!
-source('../../../scripts/basic.R', chdir = TRUE)
+source('../../../../scripts/basic.R', chdir = TRUE)
 
 tissues <- c(liver = 'liver', brain = 'brain')
 stages <- c('e15.5', 'e18.5', 'P0.5', 'P4', 'P22', 'P29')
