@@ -3,7 +3,7 @@ plotCountMatrix <- function (counts, main) {
     gradient <- function (tissue)
         colorRampPalette(c('white', tissueColor[tissue]),
                          interpolate = 'spline')(maxval[[tissue]] + 1)
-    colors <- sapply(tissues, gradient)
+    colors <- map(gradient, tissues)
 
     w <- nrow(counts[[1]])
     par(mfrow = c(w, w), mar = rep(0, 4), oma = c(1, 1, 4, 10))
