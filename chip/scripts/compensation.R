@@ -211,8 +211,8 @@ if (! interactive()) {
 
         permCor <- function (genes, gene, perm)
             map(.(other = cor(as.numeric(genes[gene, ]),
-                                as.numeric(genes[other, perm]),
-                                method = 'spearman')),
+                              as.numeric(genes[other, perm]),
+                              method = 'spearman')),
                 (1 : nrow(genes))[-gene])
 
         map(.(gene = map(.(p = permCor(genes, gene, p)), permutations)),
