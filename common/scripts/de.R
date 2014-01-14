@@ -4,7 +4,7 @@ pairwiseDifferentialExpression <- function (data, mapping, threshold) {
     cond <- function (x) sprintf('%s-%s', tissue, stages[x])
     contrast <- function (i, j) sprintf('%s/%s', cond(i), cond(j))
 
-    stageList <- map(.(map(.(NULL), stages)), stages)
+    stageList <- map(.(.=map(.(.=NULL), stages)), stages)
     results <- list(liver = stageList, brain = stageList)
     de <- list()
 
