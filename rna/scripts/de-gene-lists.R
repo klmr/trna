@@ -4,18 +4,16 @@ mrnaWriteDeGenes <- function () {
     for (tissue in tissues) {
         base <- file.path('results/de', tissue)
         mkdir(base)
-        for (a in names(mrnaDeGenes[[tissue]])) {
-            contrastA <- mrnaDeGenes[[tissue]][[a]]
-            for (b in names(contrastA)) {
-                if (is.null(contrastA[[b]])) {
-                    cat('Nothing for', tissue, a, b, '\n')
-                    next
-                }
-                write.table(contrastA[[b]],
-                            file.path(base, sprintf('%s-%s', a, b), ext = 'tsv'),
-                            col.names = NA, sep = '\t', quote = FALSE)
-            }
-        }
+
+        contrasts <- names(mrnaDeGenes)
+        contrasts <- contrasts[grepl(tissue, contrasts)]
+
+        map(.(contrast =
+              let(filename = file.path(base, gsub(paste0(tissue, '-'), '',
+                        sub('/', '-', contrast)), ext = 'tsv'),
+                  write.table(mrnaDeGenes[[contrast]], filename,
+                              col.names = NA, sep = '\t', quote = FALSE))),
+            contrasts)
     }
 }
 
