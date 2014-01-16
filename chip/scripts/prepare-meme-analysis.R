@@ -11,18 +11,20 @@ runMeme <- function (foreground, background, outputPath) {
     filterFastaBin <- '../common/scripts/filter-fasta'
     markovModelBin <- '../common/scripts/markov-model-from-fasta'
 
-    trnaUpstreamFastaFile <- '../common/data/tRNA-upstream-with-ids.fasta'
+    trnaUpstreamFastaFile <- '../common/data/trna-upstream-with-ids.fasta'
 
     mkdir(outputPath)
 
-    system(sprintf('%s < %s %s > %s',
+    system(sprintf('bash -c \'%s <(%s < %s %s) > %s\'',
+                   dustBin,
                    filterFastaBin,
                    trnaUpstreamFastaFile,
                    paste(foreground, collapse = ' '),
                    file.path(outputPath, 'seq.fasta')))
 
-    system(sprintf('bash -c \'%s <(%s < %s %s) > %s\'',
+    system(sprintf('bash -c \'%s <(%s <(%s < %s %s)) > %s\'',
                    markovModelBin,
+                   dustBin,
                    filterFastaBin,
                    trnaUpstreamFastaFile,
                    paste(background, collapse = ' '),

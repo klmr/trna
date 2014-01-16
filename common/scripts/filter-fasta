@@ -8,5 +8,6 @@ def main():
     records = SeqIO.to_dict(SeqIO.parse(sys.stdin, 'fasta'))
     SeqIO.write([records[id] for id in ids], sys.stdout, 'fasta')
 
+
 if __name__ == '__main__':
     sys.exit(main())
