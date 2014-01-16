@@ -70,7 +70,7 @@ getExpressedtRNAs <- function (counts) {
 
     # Value determined by examining the data.
     threshold <- 10
-    conditions <- unique(trnaMapping$Condition)
+    conditions <- unique(trnaMapping[colnames(counts), 'Condition'])
 
     meetsThreshold <- counts > 10
     meetsThresholdPerCond <- sapply(conditions, tRNAsInCondition)
