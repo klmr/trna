@@ -30,7 +30,7 @@ runMeme <- function (foreground, background, outputPath) {
                    paste(background, collapse = ' '),
                    file.path(outputPath, 'background.mm')))
 
-    system(sprintf('%s %s -dna -oc %s -nostatus -maxsize 60000 -mod zoops -nmotifs 3 -minw 6 -maxw 50 -revcomp -bfile %s',
+    system(sprintf('%s %s -dna -oc %s -nostatus -maxsize 200000 -mod zoops -nmotifs 3 -minw 6 -maxw 50 -revcomp -bfile %s',
                    memeBin,
                    file.path(outputPath, 'seq.fasta'),
                    file.path(outputPath, 'result'),
@@ -47,6 +47,15 @@ runMemeForStages <- function (tissue, a, b) {
     runMeme(deGenes, background, basePath)
 }
 
+runMemeOnAll <- function () {
+    # Test expressed versus non expressed genes
+    expressed <- rownames(trnaAnnotation)
+    all <- rownames(trnaUnfilteredAnnotation)
+    background <- setdiff(all, expressed)
+    basePath <- 'results/meme/expressed'
+    runMeme(expressed, background, basePath)
+}
+
 if (! interactive()) {
     trnaLoadData()
     trnaPairwiseDiffentialExpression()
@@ -58,4 +67,6 @@ if (! interactive()) {
             runMemeForStages(tissue, 'e15.5', stage)
         }
     }
+
+    runMemeOnAll()
 }
