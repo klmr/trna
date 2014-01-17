@@ -124,11 +124,18 @@ tomtom <- function (pspm, foreground, outputPath, databases) {
                                c('JASPAR_CORE_2009_vertebrates.meme',
                                  'uniprobe_mouse.meme'))
 
+    outputPath <- file.path(outputPath, 'result', motifName)
     system(sprintf('%s -no-ssc -oc %s -min-overlap 5 -mi 1 -dist pearson -evalue -thresh 10 %s %s',
                    tomtomBin,
-                   file.path(outputPath, 'result', motifName),
+                   outputPath,
                    inputFile,
                    databases))
+
+    read.table(file.path(outputPath, 'tomtom.txt'), sep = '\t',
+               col.names = c('QueryID', 'TargetID', 'Offset', 'pvalue',
+                             'Evalue', 'qvalue', 'Overlap', 'QueryConsensus',
+                             'TargetConsensus', 'Orientation'),
+               stringsAsFactors = FALSE)
 }
 
 getMemeSetupForStage <- function (tissue, a, b) {
@@ -141,17 +148,15 @@ getMemeSetupForStage <- function (tissue, a, b) {
     as.list(environment())
 }
 
-runMemeForStages <- function (tissue, a, b) {
+runMemeForStages <- function (tissue, a, b)
     with(getMemeSetupForStage(tissue, a, b),
          meme(deGenes, background, basePath))
-}
 
-runTomtomForStage <- function (tissue, a, b) {
+runTomtomForStage <- function (tissue, a, b)
     with(getMemeSetupForStage(tissue, a, b), {
         pspm <- meme(deGenes, background, basePath)
-        map(tomtom, pspm, list(deGenes), basePath) %|% invisible
+        map(tomtom, pspm, list(deGenes), basePath)
     })
-}
 
 runMemeOnAll <- function () {
     # Test expressed versus non expressed genes
@@ -168,11 +173,10 @@ if (! interactive()) {
 
     # For now, only look at e15.5/* contrasts
 
-    for (tissue in tissues) {
-        for (stage in stages[-1]) {
-            runMemeForStages(tissue, 'e15.5', stage)
-        }
-    }
+    motifBindingSites <- apply(expand.grid(stages[-1], tissues), ROWS,
+                               .(x = runTomtomForStage(x[2], 'e15.5', x[1])))
 
-    runMemeOnAll()
+    # Just to check whether we actually find anything.
+    # Takes very long and yields no interesting results.
+    #runMemeOnAll()
 }
