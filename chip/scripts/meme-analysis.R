@@ -11,6 +11,11 @@ trnaUpstreamFastaFile <- '../common/data/trna-upstream-with-ids.fasta'
 memeDatabasePath <- '../common/data/meme/motif_databases'
 
 meme <- function (foreground, background, outputPath) {
+    if (length(foreground) == 0) {
+        warning('Empty gene list -- Meme not run')
+        return(list())
+    }
+
     mkdir(outputPath)
 
     system(sprintf('bash -c \'%s <(%s < %s %s) > %s\'',
@@ -155,6 +160,8 @@ runMemeForStages <- function (tissue, a, b)
 runTomtomForStage <- function (tissue, a, b)
     with(getMemeSetupForStage(tissue, a, b), {
         pspm <- meme(deGenes, background, basePath)
+        if (length(pspm) == 0)
+            return()
         map(tomtom, pspm, list(deGenes), basePath)
     })
 
@@ -175,6 +182,11 @@ if (! interactive()) {
 
     motifBindingSites <- apply(expand.grid(stages[-1], tissues), ROWS,
                                .(x = runTomtomForStage(x[2], 'e15.5', x[1])))
+
+    motifBindingSites <- map(lp(do.call, rbind),
+                             filter(neg(is.null), motifBindingSites))
+
+    motifBindingSites <- do.call(rbind, motifBindingSites)
 
     # Just to check whether we actually find anything.
     # Takes very long and yields no interesting results.
