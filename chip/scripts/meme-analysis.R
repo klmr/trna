@@ -1,10 +1,7 @@
 source('scripts/de.R')
+source('scripts/expressed-per-stage.R')
 
-countsForCondition <- function (conditions)
-    trnaRawCounts[, colnames(trnaRawCounts) %in%
-                    rownames(trnaMapping)[trnaMapping$Condition %in% conditions]]
-
-runMeme <- function (foreground, background, outputPath) {
+meme <- function (foreground, background, outputPath) {
     memePath <- '/usr/local/Cellar/meme/4.9.0-p4/bin'
     memeBin <- file.path(memePath, 'meme')
     dustBin <- file.path(memePath, 'dust')
@@ -30,11 +27,28 @@ runMeme <- function (foreground, background, outputPath) {
                    paste(background, collapse = ' '),
                    file.path(outputPath, 'background.mm')))
 
-    system(sprintf('%s %s -dna -oc %s -nostatus -maxsize 200000 -mod zoops -nmotifs 3 -minw 6 -maxw 50 -revcomp -bfile %s',
+    system(sprintf('%s %s -dna -oc %s -maxsize 200000 -mod zoops -nmotifs 3 -minw 6 -maxw 50 -revcomp -bfile %s',
                    memeBin,
                    file.path(outputPath, 'seq.fasta'),
                    file.path(outputPath, 'result'),
                    file.path(outputPath, 'background.mm')))
+
+    parsePspm(file.path(outputPath, 'result'))
+}
+
+parsePspm <- function (results) {
+    # Parse output raw text file and retrieve PSSMs for all motifs.
+    # Note: we could also parse the XML file using XPath but the XML output file
+    # is quite frankly not very nice. Parsing the raw text is easier. Fail.
+    file <- file.path(results, 'meme.txt')
+    lines <- readLines(file)
+    start <- grep('^\tMotif \\d+ position-specific probability matrix', lines) + 3
+    header <- start - 1
+    lengthMatch <- regexpr('(?<=w= )\\d+', lines[header], perl = TRUE)
+    length <- as.numeric(regmatches(lines[header], lengthMatch))
+    map(.(start, end = read.table(text = paste(lines[start : end], collapse = '\n'),
+                                  col.names = c('A', 'C', 'G', 'T'))),
+        start, start + length - 1)
 }
 
 runMemeForStages <- function (tissue, a, b) {
@@ -44,7 +58,7 @@ runMemeForStages <- function (tissue, a, b) {
     allGenes <- getExpressedtRNAs(countsForCondition(contrastStages))
     background <- setdiff(allGenes, deGenes)
     basePath <- file.path('results/meme', tissue, paste(a, b, sep = '-'))
-    runMeme(deGenes, background, basePath)
+    meme(deGenes, background, basePath)
 }
 
 runMemeOnAll <- function () {
@@ -53,7 +67,7 @@ runMemeOnAll <- function () {
     all <- rownames(trnaUnfilteredAnnotation)
     background <- setdiff(all, expressed)
     basePath <- 'results/meme/expressed'
-    runMeme(expressed, background, basePath)
+    meme(expressed, background, basePath)
 }
 
 if (! interactive()) {
