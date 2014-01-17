@@ -5,6 +5,7 @@ countsForCondition <- function (conditions)
                     rownames(trnaMapping)[trnaMapping$Condition %in% conditions]]
 
 if (! interactive()) {
+    cat('Compute list of genes expressed in each stage\n')
     trnaLoadData()
     trnaPairwiseDiffentialExpression()
 

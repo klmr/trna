@@ -1,4 +1,5 @@
 source('scripts/de-gene-lists.R')
+source('scripts/expressed-per-stage.R')
 source('scripts/de-histograms.R')
 source('scripts/de-plots.R')
 source('scripts/pca.R')
