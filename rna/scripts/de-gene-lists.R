@@ -22,4 +22,9 @@ if (! interactive()) {
     mrnaLoadData()
     mrnaPairwiseDifferentialExpression()
     mrnaWriteDeGenes()
+
+    percent <- map(.(x = max(x, na.rm = TRUE) / nrow(mrnaRawCounts)),
+                   mrnaDeCount)
+    cat('Maximum percent of total number of mRNA genes:\n')
+    cat(sprintf('Liver: %0.2f\nBrain: %0.2f\n', percent$liver, percent$brain))
 }
