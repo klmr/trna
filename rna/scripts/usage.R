@@ -141,8 +141,6 @@ shuffleRows <- function (df)
 resampledCodonUsage <- function () {
     samples <- 100
 
-    # Use subset of data to assess variability over runs
-    #data <- mrnaNormDataCond[1 : 1000, ]
     data <- mrnaNormDataCond[, grep('liver', colnames(mrnaNormDataCond))]
 
     require(parallel)
@@ -160,7 +158,8 @@ resampledCodonUsage <- function () {
                                     lp(do.call, cbind)),
                               1 : ncol(data))
 
-    perConditionMatrix <- map(p(`rownames<-`, rownames(codonUsageData)), perConditionMatrix)
+    perConditionMatrix <- map(p(`rownames<-`, rownames(codonUsageData)),
+                              perConditionMatrix)
     names(perConditionMatrix) <- colnames(data)
 
     codonSampleMatrix <- do.call(cbind, codonSamples)
