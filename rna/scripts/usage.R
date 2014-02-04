@@ -122,8 +122,10 @@ backgroundCodonUsage <- function (strand, frame) {
 generateCodonBackgroundUsage <- function () {
     if (exists('overallCodonBackground'))
         return()
+    strand <- c(1, -1)
+    frameshift <- 0 : 2
     overallCodonBackground <-
-        apply(expand.grid(c(1, -1), 0 : 2), ROWS,
+        apply(expand.grid(strand, frameshift), ROWS,
               .(row = backgroundCodonUsage(row[1], row[2])))
     overallAaBackground <-
         map(.(x = groupby(x, geneticCode[rownames(x), 1])),
