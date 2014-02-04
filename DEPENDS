@@ -5,7 +5,6 @@ DESeq2
 gplots
 gtools
 Hmisc
-package
 parallel
 plotrix
 plyr
