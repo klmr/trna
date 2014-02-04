@@ -10,4 +10,5 @@ require <- function (package)
        base::require(as.character(substitute(package)), character.only = TRUE))
 
 # Qualified path to make this usable everywhere.
+source('../common/scripts/rcane/xsource.R', chdir = TRUE)
 source('../common/scripts/definitions.R', chdir = TRUE)
