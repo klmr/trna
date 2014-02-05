@@ -11,7 +11,7 @@ trnaGroupFamilyAndType <- function () {
     trnaByType <<- groupby(trnaNormDataCond, trnaAnnotation$Type, sum)
 }
 
-resampleCodonAbundance <- function () {
+resampleAcceptorAbundance <- function () {
     samples <- 100
     data <- trnaNormDataCond[, grep('liver', colnames(trnaNormDataCond))]
     # Reorder columns by stages since they are unordered
