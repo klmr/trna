@@ -25,6 +25,29 @@ plotSpiderWeb <- function () {
     }
 }
 
+plotAcceptorAbundanceForAA <- function (aa, data, name) {
+    codons <- rownames(subset(geneticCode, AA == aa))
+    if (length(codons) == 1)
+        return()
+
+    long <- subset(aminoAcids, Short == aa)$Long
+    isotypes <- rownames(subset(trnaAnnotation, Type == long))
+    data <- groupby(data[isotypes, ], trnaAnnotation[isotypes, 'Acceptor'])
+    rownames(data) <- revcomp(rownames(data))
+
+    main <- sprintf('Simulated %s isoacceptor abundance in %s',
+                    long, readable(name))
+    plotCodonBarplot(relativeData(data), main)
+}
+
+plotAcceptorSampling <- function () {
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/codons-%s.pdf', name))
+        map(p(plotAcceptorAbundanceForAA, data, name), aminoAcids$Short)
+    }), acceptorSampleMatrix, names(acceptorSampleMatrix)) %|% invisible
+}
+
 plotCodonsByType <- function () {
     for (tissue in tissues) {
         pdf(sprintf('plots/usage/codons-%s.pdf', tissue),
@@ -269,4 +292,9 @@ if (! interactive()) {
         pdf('plots/usage/amino-acid-scatter.pdf', width = 7, height = 10, family = plotFamily)
         plotAminAcidsByStage()
     })
+
+    cat('# Generate shuffled expression isoacceptor profiles\n')
+    resampleAcceptorAbundance()
+    mkdir('plots/usage-sampling')
+    plotAcceptorSampling()
 }
