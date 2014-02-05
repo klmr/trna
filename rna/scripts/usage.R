@@ -21,7 +21,7 @@ codonUsage <- function (method, countData) {
     write.table(countData, file = tmp, sep = '\t', col.names = FALSE, quote = FALSE)
     resultData <- paste(readcmd('python', script, transcripts, '<', tmp),
                         collapse = '\n')
-    read.table(text = resultData, row.names = 1, col.names = c('', 'Count'))
+    read.table(text = resultData, row.names = 1, header = FALSE)
 }
 
 loadCodonMap <- function ()
@@ -133,4 +133,44 @@ generateCodonBackgroundUsage <- function () {
     overallCodonBackground <<- do.call(cbind, overallCodonBackground)
     overallAaBackground <<- map(.(x = x[rownames(x) != 'Stop', , drop = FALSE]),
                                 overallAaBackground) %|% lp(do.call, cbind)
+}
+
+shuffleRows <- function (df)
+    `rownames<-`(df[sample.int(nrow(df)), , drop = FALSE], rownames(df))
+
+resampleCodonUsage <- function () {
+    if (exists('codonSampleMatrix'))
+        return()
+
+    sampledCodonsFile <- '../common/cache/sampled-codons.RData'
+    mkdir('../common/cache')
+    suppressWarnings(loaded <- tryCatch(load(sampledCodonsFile), error = .(e = '')))
+
+    if (! isTRUE(all.equal(loaded, 'codonSampleMatrix'))) {
+        samples <- 100
+
+        data <- mrnaNormDataCond[, grep('liver', colnames(mrnaNormDataCond))]
+
+        require(parallel)
+
+        cat('Generating codon usage for permuted expressions')
+        codonSamples <- mclapply(1 : samples, .(i = {
+            d <- shuffleRows(data)
+            on.exit(cat('.'))
+            do.call(cbind, sapply(colnames(d),
+                                  lp(`[`, d) %|>% lp(codonUsage, 'multi_codon')))
+        }), mc.cores = detectCores())
+        cat('\n')
+
+        # Extract all same conditions
+        codonSampleMatrix <- map(.(col = map(.(m = m[, col]), codonSamples) %|%
+                                   lp(do.call, cbind)), 1 : ncol(data))
+
+        codonSampleMatrix <- map(p(`rownames<-`, rownames(codonUsageData)),
+                                 codonSampleMatrix)
+        names(codonSampleMatrix) <- colnames(data)
+        save(codonSampleMatrix, file = sampledCodonsFile)
+    }
+
+    codonSampleMatrix <<- codonSampleMatrix
 }

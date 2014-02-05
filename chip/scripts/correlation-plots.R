@@ -25,6 +25,55 @@ plotSpiderWeb <- function () {
     }
 }
 
+plotAcceptorAbundanceForAA <- function (aa, data, name) {
+    codons <- rownames(subset(geneticCode, AA == aa))
+    if (length(codons) == 1)
+        return()
+
+    long <- subset(aminoAcids, Short == aa)$Long
+    isotypes <- rownames(subset(trnaAnnotation, Type == long))
+    data <- groupby(data[isotypes, ], trnaAnnotation[isotypes, 'Acceptor'])
+    rownames(data) <- revcomp(rownames(data))
+
+    main <- sprintf('Simulated %s isoacceptor abundance in %s',
+                    long, readable(name))
+    plotCodonBarplot(relativeData(data), main)
+}
+
+plotAcceptorSampling <- function () {
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/codons-%s.pdf', name))
+        map(p(plotAcceptorAbundanceForAA, data, name), aminoAcids$Short)
+    }), acceptorSampleMatrix, names(acceptorSampleMatrix)) %|% invisible
+}
+
+plotIsotypeUsage <- function (data, name) {
+    plotRadial <- function (data, labels, main, ...) {
+        tcolors <- c(rep('#40404050', ncol(data) - 1), colors[1])
+        lwd <- c(rep(2, ncol(data) - 1), 5)
+        radial.plot(data, labels = labels, main = main,
+                    line.col = tcolors, lwd = lwd, show.grid.labels = 3, ...)
+    }
+
+    data <- groupby(data, trnaAnnotation$Type)
+    # Enforce uniform oder between tRNA and mRNA plots.
+    data <- data[aminoAcids$Long, ]
+    plotRadial(relativeData(data), rownames(data),
+               radial.lim = c(0, 0.1),
+               main = sprintf('Isotype abundance with resampled expression for %s\n', name))
+}
+
+plotIsotypeSampling <- function () {
+    allBackground <- trnaNormDataCond[, grep('liver', colnames(trnaNormDataCond))]
+    allBackground <- allBackground[, vapply(stages, p(grep, colnames(allBackground)), numeric(1))]
+    map(.(data, background, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/amino-acids-%s.pdf', name))
+        plotIsotypeUsage(cbind(data, background), readable(name))
+    }), acceptorSampleMatrix, allBackground, names(acceptorSampleMatrix)) %|% invisible
+}
+
 plotCodonsByType <- function () {
     for (tissue in tissues) {
         pdf(sprintf('plots/usage/codons-%s.pdf', tissue),
@@ -269,4 +318,10 @@ if (! interactive()) {
         pdf('plots/usage/amino-acid-scatter.pdf', width = 7, height = 10, family = plotFamily)
         plotAminAcidsByStage()
     })
+
+    cat('# Generate shuffled expression isoacceptor profiles\n')
+    resampleAcceptorAbundance()
+    mkdir('plots/usage-sampling')
+    plotAcceptorSampling()
+    plotIsotypeSampling()
 }

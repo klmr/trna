@@ -93,6 +93,49 @@ plotCodonBackground <- function () {
     })
 }
 
+plotCodonUsageForAA <- function (aa, data, name) {
+    codons <- rownames(subset(geneticCode, AA == aa))
+    if (length(codons) == 1)
+        return()
+
+    long <- subset(aminoAcids, Short == aa)$Long
+    main <- sprintf('Simulated %s tripled codon usage in %s',
+                    long, readable(name))
+    plotCodonBarplot(relativeData(data[codons, ]), main)
+}
+
+plotCodonSampling <- function () {
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/codons-%s.pdf', name))
+        map(p(plotCodonUsageForAA, data, name), aminoAcids$Short)
+    }), codonSampleMatrix, names(codonSampleMatrix)) %|% invisible
+}
+
+plotAAUsage <- function (data, name) {
+    plotRadial <- function (data, labels, main, ...) {
+        radial.plot(data, labels = labels, main = main,
+                    line.col = rep('#40404050', ncol(data)),
+                    lwd = 2, show.grid.labels = 3, ...)
+    }
+
+    data <- groupby(data, geneticCode[rownames(data), 'AA'])
+    # Enforce uniform oder between tRNA and mRNA plots.
+    data <- data[aminoAcids$Short, ]
+    rownames(data) <- aminoAcids[aminoAcids$Short == rownames(data), 'Long']
+    plotRadial(relativeData(data), rownames(data),
+               radial.lim = c(0, 0.1),
+               main = sprintf('Amino acid usage with resampled expression for %s\n', name))
+}
+
+plotAminoAcidSampling <- function () {
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/amino-acids-%s.pdf', name))
+        plotAAUsage(data, readable(name))
+    }), codonSampleMatrix, names(codonSampleMatrix)) %|% invisible
+}
+
 if (! interactive()) {
     cat('# Generating mRNA codon usage data\n')
     mrnaLoadData()
@@ -119,4 +162,10 @@ if (! interactive()) {
 
     cat('# Generate background mRNA codon usage plots\n')
     plotCodonBackground()
+
+    cat('# Generate shuffled expression codon profiles\n')
+    resampleCodonUsage()
+    mkdir('plots/usage-sampling')
+    plotCodonSampling()
+    plotAminoAcidSampling()
 }
