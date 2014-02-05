@@ -112,6 +112,30 @@ plotCodonSampling <- function () {
     }), codonSampleMatrix, names(codonSampleMatrix)) %|% invisible
 }
 
+plotAAUsage <- function (data, name) {
+    plotRadial <- function (data, labels, main, ...) {
+        radial.plot(data, labels = labels, main = main,
+                    line.col = rep('#40404050', ncol(data)),
+                    lwd = 2, show.grid.labels = 3, ...)
+    }
+
+    data <- groupby(data, geneticCode[rownames(data), 'AA'])
+    # Enforce uniform oder between tRNA and mRNA plots.
+    data <- data[aminoAcids$Short, ]
+    rownames(data) <- aminoAcids[aminoAcids$Short == rownames(data), 'Long']
+    plotRadial(relativeData(data), rownames(data),
+               radial.lim = c(0, 0.1),
+               main = sprintf('Amino acid usage with resampled expression for %s\n', name))
+}
+
+plotAminoAcidSampling <- function () {
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/amino-acids-%s.pdf', name))
+        plotAAUsage(data, readable(name))
+    }), codonSampleMatrix, names(codonSampleMatrix)) %|% invisible
+}
+
 if (! interactive()) {
     cat('# Generating mRNA codon usage data\n')
     mrnaLoadData()
@@ -138,9 +162,10 @@ if (! interactive()) {
 
     cat('# Generate background mRNA codon usage plots\n')
     plotCodonBackground()
-    
+
     cat('# Generate shuffled expression codon profiles\n')
     resampleCodonUsage()
     mkdir('plots/usage-sampling')
     plotCodonSampling()
+    plotAminoAcidSampling()
 }
