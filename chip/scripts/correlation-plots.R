@@ -211,7 +211,7 @@ plotAminAcidsByStage <- function () {
             r2 <- cor(data$trna, data$mrna, method = 'pearson')
             prho <- cor.test(data$trna, data$mrna, method = 'spearman')$p.value
             pr2 <- cor.test(data$trna, data$mrna, method = 'pearson')$p.value
-            message('prho=', prho, ' pr2=', pr2)
+            message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
             text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
                                    italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
                  adj = c(1.1, -0.1))
