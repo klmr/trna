@@ -138,34 +138,39 @@ generateCodonBackgroundUsage <- function () {
 shuffleRows <- function (df)
     `rownames<-`(df[sample.int(nrow(df)), ], rownames(df))
 
-resampledCodonUsage <- function () {
-    samples <- 100
+resampleCodonUsage <- function () {
+    if (exists('codonSampleMatrix'))
+        return()
 
-    data <- mrnaNormDataCond[, grep('liver', colnames(mrnaNormDataCond))]
+    sampledCodonsFile <- '../common/cache/sampled-codons.RData'
+    mkdir('../common/cache')
+    suppressWarnings(loaded <- tryCatch(load(sampledCodonsFile), error = .(e = '')))
 
-    require(parallel)
+    if (! isTRUE(all.equal(loaded, 'codonSampleMatrix'))) {
+        samples <- 100
 
-    codonSamples <- mclapply(1 : samples, .(i = {
-        d <- shuffleRows(data)
-        on.exit(cat('.'))
-        do.call(cbind, sapply(colnames(d),
-                              lp(`[`, d) %|>% lp(codonUsage, 'multi_codon')))
-    }), mc.cores = detectCores())
-    cat('\n')
+        data <- mrnaNormDataCond[, grep('liver', colnames(mrnaNormDataCond))]
 
-    # Extract all same conditions
-    perConditionMatrix <- map(.(col = map(.(m = m[, col]), codonSamples) %|%
-                                    lp(do.call, cbind)),
-                              1 : ncol(data))
+        require(parallel)
 
-    perConditionMatrix <- map(p(`rownames<-`, rownames(codonUsageData)),
-                              perConditionMatrix)
-    names(perConditionMatrix) <- colnames(data)
+        cat('Generating codon usage for permuted expressions')
+        codonSamples <- mclapply(1 : samples, .(i = {
+            d <- shuffleRows(data)
+            on.exit(cat('.'))
+            do.call(cbind, sapply(colnames(d),
+                                  lp(`[`, d) %|>% lp(codonUsage, 'multi_codon')))
+        }), mc.cores = detectCores())
+        cat('\n')
 
-    codonSampleMatrix <- do.call(cbind, codonSamples)
+        # Extract all same conditions
+        codonSampleMatrix <- map(.(col = map(.(m = m[, col]), codonSamples) %|%
+                                   lp(do.call, cbind)), 1 : ncol(data))
 
-    relCodonSample <- relativeData(codonSampleMatrix)
-    bounds <- rbind(apply(relCodonSample, ROWS, min),
-                    apply(relCodonSample, ROWS, max))
-    rownames(codonSampleMatrix) <- rownames(codonUsageData)
+        codonSampleMatrix <- map(p(`rownames<-`, rownames(codonUsageData)),
+                                 codonSampleMatrix)
+        names(codonSampleMatrix) <- colnames(data)
+        save(codonSampleMatrix, file = sampledCodonsFile)
+    }
+
+    codonSampleMatrix <<- codonSampleMatrix
 }
