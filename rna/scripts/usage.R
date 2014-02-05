@@ -136,7 +136,7 @@ generateCodonBackgroundUsage <- function () {
 }
 
 shuffleRows <- function (df)
-    `rownames<-`(df[sample.int(nrow(df)), ], rownames(df))
+    `rownames<-`(df[sample.int(nrow(df)), , drop = FALSE], rownames(df))
 
 resampleCodonUsage <- function () {
     if (exists('codonSampleMatrix'))
