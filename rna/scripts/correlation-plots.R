@@ -94,45 +94,14 @@ plotCodonBackground <- function () {
 }
 
 plotCodonUsageForAA <- function (aa, data, name) {
-    # Copied from chip/scripts/correlation-plots.R:plotCodonsByType
-    # Refactoring, yay.
     codons <- rownames(subset(geneticCode, AA == aa))
     if (length(codons) == 1)
         return()
 
-    data <- relativeData(data[codons, ])
-
-    # We shuffle the order of the colours to avoid giving the misleading
-    # impression of a gradient.
-    grays <- gray.colors(length(colors) - 1)[c(3, 6, 2, 5, 1, 4, 7)]
-
-    oldPar <- par(lty = 0, xpd = TRUE)
-    on.exit(par(oldPar))
     long <- subset(aminoAcids, Short == aa)$Long
-    barplot(data, horiz = TRUE, col = grays, axes = FALSE, space = 0,
-            xlab = 'Cumulative proportion of codons',
-            ylab = 'Shuffled samples',
-            las = 1, names.arg = rep('', ncol(data)),
-            main = sprintf('Codon usage of %s with resampled expressions in %s',
-                           long, readable(name)))
-    axis(1, 0 : 4 / 4, sprintf('%d%%', 0 : 4 * 25), cex.axis = 0.75)
-    legendPos <- data[, ncol(data)]
-    legendCol <- grays[legendPos != 0]
-    legendPos <- cumsum(legendPos[legendPos != 0])
-    legend <- names(legendPos)
-    legendPos <- c(0, legendPos[-length(legendPos)])
-
-    par(usr = c(0, 1, 0, 1))
-
-    # Adjust label positions so they don’t overlap.
-    legendWidths <- strwidth(legend)
-    if (length(legend) > 1)
-        for (i in 1 : (length(legend) - 1))
-            if (legendPos[i] + legendWidths[i] > legendPos[i + 1])
-                legendPos[i + 1] <- legendPos[i] + legendWidths[i]
-
-    text(legendPos, 1, legend, pos = 4, col = legendCol,
-         cex = 0.75, offset = 0.1)
+    main <- sprintf('Simulated %s tripled codon usage in %s',
+                    long, readable(name))
+    plotCodonBarplot(relativeData(data[codons, ]), main)
 }
 
 plotCodonSampling <- function () {

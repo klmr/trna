@@ -21,6 +21,7 @@ source('plot-pca.R')
 source('plot-pairwise.R')
 source('plot-correlations.R')
 source('plot-radial.R')
+source('plot-codons.R')
 
 loadAminoAcids <- function () {
     aminoAcidPath <- '../common/data/amino_acids.tsv'
