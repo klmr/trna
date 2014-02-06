@@ -54,7 +54,7 @@ plotAcceptorSampling <- function () {
 plotIsotypeUsage <- function (data, background, name) {
     prepare <- function (data, background) {
         data <- cbind(data, background)
-        data <- groupby(data, trnaAnnotation$Type)
+        data <- groupby(data, trnaUnfilteredAnnotation$Type)
         # Enforce uniform oder between tRNA and mRNA plots.
         data <- data[aminoAcids$Long, ]
         relativeData(data)
@@ -68,11 +68,13 @@ plotIsotypeUsage <- function (data, background, name) {
     radial.plot(data, labels = rownames(data),
                 main = 'Isotype abundance with resampled expression',
                 line.col = tcolors, lwd = lwd, show.grid.labels = 3,
-                radial.lim = c(0, 0.1))
+                radial.lim = c(0, 0.2))
 }
 
 plotIsotypeSampling <- function () {
-    allBackground <- trnaNormDataCond[, grep('liver', colnames(trnaNormDataCond))]
+    cds <- trnaGetCountDataSet(trnaUnfilteredRawCounts)
+    unfiltered <- trnaMergeReplicates(as.data.frame(counts(cds, normalized = TRUE)))
+    allBackground <- unfiltered[, grep('liver', colnames(unfiltered))]
     allBackground <- allBackground[, vapply(stages, p(grep, colnames(allBackground)), numeric(1))]
 
     on.exit(dev.off())
