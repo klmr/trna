@@ -33,7 +33,10 @@ plotAcceptorAbundanceForAA <- function (aa, data, name) {
     long <- subset(aminoAcids, Short == aa)$Long
     isotypes <- rownames(subset(trnaAnnotation, Type == long))
     data <- groupby(data[isotypes, ], trnaAnnotation[isotypes, 'Acceptor'])
+    # Make row order consistent.
     rownames(data) <- revcomp(rownames(data))
+    data <- data[codons, ]
+    data[is.na(data)] <- 0
 
     main <- sprintf('Simulated %s isoacceptor abundance in %s',
                     long, readable(name))
