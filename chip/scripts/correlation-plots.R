@@ -51,30 +51,34 @@ plotAcceptorSampling <- function () {
     }), acceptorSampleMatrix, names(acceptorSampleMatrix)) %|% invisible
 }
 
-plotIsotypeUsage <- function (data, name) {
-    plotRadial <- function (data, labels, main, ...) {
-        tcolors <- c(rep('#40404050', ncol(data) - 1), colors[1])
-        lwd <- c(rep(2, ncol(data) - 1), 5)
-        radial.plot(data, labels = labels, main = main,
-                    line.col = tcolors, lwd = lwd, show.grid.labels = 3, ...)
+plotIsotypeUsage <- function (data, background, name) {
+    prepare <- function (data, background) {
+        data <- cbind(data, background)
+        data <- groupby(data, trnaAnnotation$Type)
+        # Enforce uniform oder between tRNA and mRNA plots.
+        data <- data[aminoAcids$Long, ]
+        relativeData(data)
     }
 
-    data <- groupby(data, trnaAnnotation$Type)
-    # Enforce uniform oder between tRNA and mRNA plots.
-    data <- data[aminoAcids$Long, ]
-    plotRadial(relativeData(data), rownames(data),
-               radial.lim = c(0, 0.1),
-               main = sprintf('Isotype abundance with resampled expression for %s\n', name))
+    n <- ncol(data[[1]]) + 1
+    data <- do.call(cbind, map(prepare, data, background))
+
+    tcolors <- rep(transparent(colors, 0.2), each = n)
+    lwd <- rep(c(rep(2, n - 1), 5), ncol(data) / n)
+    radial.plot(data, labels = rownames(data),
+                main = 'Isotype abundance with resampled expression',
+                line.col = tcolors, lwd = lwd, show.grid.labels = 3,
+                radial.lim = c(0, 0.1))
 }
 
 plotIsotypeSampling <- function () {
     allBackground <- trnaNormDataCond[, grep('liver', colnames(trnaNormDataCond))]
     allBackground <- allBackground[, vapply(stages, p(grep, colnames(allBackground)), numeric(1))]
-    map(.(data, background, name = {
-        on.exit(dev.off())
-        pdf(sprintf('plots/usage-sampling/amino-acids-%s.pdf', name))
-        plotIsotypeUsage(cbind(data, background), readable(name))
-    }), acceptorSampleMatrix, allBackground, names(acceptorSampleMatrix)) %|% invisible
+
+    on.exit(dev.off())
+    pdf('plots/usage-sampling/amino-acids.pdf')
+    plotIsotypeUsage(acceptorSampleMatrix, allBackground,
+                     readable(names(acceptorSampleMatrix)))
 }
 
 plotCodonsByType <- function () {
