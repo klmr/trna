@@ -5,13 +5,13 @@ plotCodonBarplot <- function (data, main) {
     # impression of a gradient.
     grays <- gray.colors(length(colors) - 1)[c(3, 6, 2, 5, 1, 4, 7)]
 
-    oldPar <- par(lty = 0, xpd = TRUE)
+    # Set xpd because the legend text at the top may overshoot plot area.
+    oldPar <- par(xpd = TRUE)
     on.exit(par(oldPar))
-    barplot(data, horiz = TRUE, col = grays, axes = FALSE, space = 0,
+    barplot(data, horiz = TRUE, col = grays, border = grays, axes = FALSE,
             xlab = 'Cumulative proportion of codons',
             ylab = 'Shuffled samples',
-            las = 1, names.arg = rep('', ncol(data)),
-            main = main)
+            space = 0, las = 1, names.arg = rep('', ncol(data)), main = main)
     axis(1, 0 : 4 / 4, sprintf('%d%%', 0 : 4 * 25), cex.axis = 0.75)
     legendPos <- data[, ncol(data)]
     legendCol <- grays[legendPos != 0]
