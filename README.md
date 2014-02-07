@@ -71,12 +71,14 @@ This is what the  directory tree of the project folder looks like:
     │   │   ├── de-hist
     │   │   ├── distribution
     │   │   ├── replicates
+    │   │   ├── usage-sampling
     │   │   └── usage
     │   ├── results
     │   │   ├── de-acc
     │   │   ├── de-genes
     │   │   ├── de-type
-    │   │   └── meme
+    │   │   ├── meme
+    │   │   └── usage-sampling
     │   └── scripts
     ├── common
     │   ├── cache
@@ -87,6 +89,7 @@ This is what the  directory tree of the project folder looks like:
         │   ├── correlation
         │   ├── de
         │   ├── distribution
+        │   ├── usage-sampling
         │   └── usage
         ├── results
         │   └── de
