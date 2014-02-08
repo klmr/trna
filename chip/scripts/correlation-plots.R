@@ -68,7 +68,7 @@ plotIsotypeUsage <- function (data, background, name) {
     radial.plot(data, labels = rownames(data),
                 main = 'Isotype abundance with resampled expression',
                 line.col = tcolors, lwd = lwd, show.grid.labels = 3,
-                radial.lim = c(0, 0.2))
+                radial.lim = c(0, 0.1))
 }
 
 plotIsotypeSampling <- function () {
