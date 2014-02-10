@@ -226,8 +226,11 @@ plotCodonsByStage <- function () {
             par(usr = c(0, 1, 0, 1))
             rho <- cor(cd$trna, cd$mrna, method = 'spearman')
             r2 <- cor(cd$trna, cd$mrna, method = 'pearson')
-            text(1, 0, bquote(atop(' ' ~ rho == .(sprintf('%.2f', rho)),
-                                      R^2 == .(sprintf('%.2f', r2)))),
+            prho <- cor.test(cd$trna, cd$mrna, method = 'spearman')$p.value
+            pr2 <- cor.test(cd$trna, cd$mrna, method = 'pearson')$p.value
+            message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
+            text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
+                                   italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
                  adj = c(1.1, -0.1))
         }
     }
