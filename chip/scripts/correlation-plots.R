@@ -294,7 +294,12 @@ plotChipCorrelation <- function () {
         on.exit(dev.off())
         pdf(file.path('plots', 'correlation',
                       sprintf('%s-usage', name), ext = 'pdf'))
-        plotCorrelationsFor(data, title)
+        data <- map(.(tissue = cor(data[, grep(tissue, colnames(data))],
+                                   method = 'spearman')), tissues)
+        data <- map(p(`diag<-`, NA), data)
+        data <- map(p(`colnames<-`, stages), data)
+        data <- map(p(`rownames<-`, stages), data)
+        plotCountMatrix(data, title, '%0.2f')
     }
 
     invisible(mapply(generateCorrelationPlot, names(methods), methods, titles))
