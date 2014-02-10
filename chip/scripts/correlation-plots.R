@@ -3,8 +3,9 @@ source('scripts/correlation.R')
 plotSpiderWeb <- function () {
     plotRadial <- function (data, labels, main, ...) {
         layout(matrix(c(1, 2), 1, 2, byrow = TRUE), widths = c(1, 0.2))
-        radial.plot(data, labels = labels, main = main, line.col = colors,
-                    lwd = 2, show.grid.labels = 3, ...)
+        radial.plot(data, labels = labels, main = main,
+                    line.col = c('#00000080', colors[indices(stages)]),
+                    lwd = c(5, rep(2, ncol(data) - 1)), show.grid.labels = 3, ...)
         plot.new()
         legend('center', legend = readable(stages), fill = colors, border = NA,
                bty = 'n', xpd = NA)
@@ -12,10 +13,12 @@ plotSpiderWeb <- function () {
 
     # Enforce uniform order between tRNA and mRNA plots.
     isotypeData <- trnaByType[aminoAcids$Long, ]
+    background <- table(trnaUnfilteredAnnotation$Type)
+    background <- background[aminoAcids$Long]
 
     for (tissue in tissues) {
         data <- isotypeData[, grep(tissue, colnames(isotypeData))]
-        relative <- relativeData(data)
+        relative <- relativeData(cbind(background, data))
         pdf(sprintf('plots/usage/trna-%s.pdf', tissue),
             width = 6, height = 6, family = plotFamily)
         plotRadial(relative, rownames(data),
