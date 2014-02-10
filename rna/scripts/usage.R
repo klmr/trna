@@ -174,3 +174,70 @@ resampleCodonUsage <- function () {
 
     codonSampleMatrix <<- codonSampleMatrix
 }
+
+resampleExpressedCodonUssage <- function () {
+    if (exists('expressedCodonSampleMatrix'))
+        return()
+
+    sampledCodonsFile <- '../common/cache/sampled-expressed-codons.RData'
+    mkdir('../common/cache')
+    suppressWarnings(loaded <- tryCatch(load(sampledCodonsFile), error = .(e = '')))
+
+    if (! isTRUE(all.equal(loaded, 'expressedCodonSampleMatrix'))) {
+        cat('Generating codon usage for permuted expressions')
+
+        expressed <- getExpressedmRNAs(mrnaRawCounts)
+        # Unlike for tRNA, we do not re-scale the library size now.
+        # The reason is that we simply want a filtered set of expressed mRNA
+        # genes as comparison to the total set, having the same expression values.
+        mrnaNDC <- mrnaNormDataCond[expressed, ]
+        expressedCodonSampleMatrix <- mrnaDoResample(mrnaNDC, 'liver')
+        save(expressedCodonSampleMatrix, file = sampledCodonsFile)
+    }
+
+    expressedCodonSampleMatrix <<- expressedCodonSampleMatrix
+}
+
+getExpressedmRNAs <- function (counts) {
+    # Filter out mRNAs which are unexpressed across all conditions.
+    # We call "unexpressed" any mRNA whose expression value is below
+    # a set threshold theta for at least one replicate.
+    # Return a vector of the names of expressed mRNAs
+
+    dos <- function (cond)
+        rownames(subset(mrnaMapping, Condition == cond))
+    mrnas <- function (cond)
+        apply(meetsThreshold[, dos(cond)], ROWS, all)
+
+    # Value determined by examining the data. Yes, it also works for mRNA.
+    threshold <- 10
+    conditions <- unique(mrnaMapping[colnames(counts), 'Condition'])
+
+    meetsThreshold <- counts > threshold
+    meetsThresholdPerCond <- sapply(conditions, mrnas)
+    expressed <- apply(meetsThresholdPerCond, ROWS, any)
+    names(expressed[expressed])
+}
+
+mrnaDoResample <- function (data, tissue, samples = 100) {
+    data <- data[, grep(tissue, colnames(data))]
+
+    require(parallel)
+
+    codonSamples <- mclapply(1 : samples, .(i = {
+        d <- shuffleRows(data)
+        on.exit(cat('.'))
+        do.call(cbind, sapply(colnames(d),
+                              lp(`[`, d) %|>% lp(codonUsage, 'multi_codon')))
+    }), mc.cores = detectCores())
+    cat('\n')
+
+    # Extract all same conditions
+    codonSampleMatrix <- map(.(col = map(.(m = m[, col]), codonSamples) %|%
+                               lp(do.call, cbind)), 1 : ncol(data))
+
+    codonSampleMatrix <- map(p(`rownames<-`, rownames(codonUsageData)),
+                             codonSampleMatrix)
+    names(codonSampleMatrix) <- colnames(data)
+    codonSampleMatrix
+}
