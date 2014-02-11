@@ -28,12 +28,20 @@ resampleAcceptorAbundance <- function () {
     acceptorSampleMatrix <<- acceptorSampleMatrix
 }
 
-isotypeAbundance <- function (acceptorAbundance) {
+acceptorAbundance <- function (trnaAbundance) {
     annotation <-
-        if(nrow(acceptorAbundance) == nrow(trnaAnnotation)) trnaAnnotation else
+        if(nrow(trnaAbundance) == nrow(trnaAnnotation)) trnaAnnotation else
             trnaUnfilteredAnnotation
 
-    data <- groupby(acceptorAbundance, annotation$Type)
+    relativeData(groupby(trnaAbundance, annotation$Acceptor))
+}
+
+isotypeAbundance <- function (trnaAbundance) {
+    annotation <-
+        if(nrow(trnaAbundance) == nrow(trnaAnnotation)) trnaAnnotation else
+            trnaUnfilteredAnnotation
+
+    data <- groupby(trnaAbundance, annotation$Type)
     # Enforce uniform order between tRNA and mRNA plots.
     data <- data[aminoAcids$Long, ]
     relativeData(data)
