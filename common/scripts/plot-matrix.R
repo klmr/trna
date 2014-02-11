@@ -1,11 +1,17 @@
-plotCountMatrix <- function (counts, main, format = '%s') {
+plotCountMatrix <- function (counts, main, format = '%s', useSameScale = FALSE) {
     cols <- 100
     gradient <- function (tissue)
         colorRampPalette(c('white', tissueColor[tissue]),
                          interpolate = 'spline')(cols + 1)
     colors <- map(gradient, tissues)
-    range <- map(p(range, na.rm = TRUE), counts)
-    range <- map(.(x = c(x, x[2] - x[1])), range)
+
+    range <- if (useSameScale) {
+        r <- range(counts, na.rm = TRUE)
+        setNames(rep(list(c(r, r[2] - r[1])), 2), names(counts))
+    } else {
+        r <- map(p(range, na.rm = TRUE), counts)
+        map(.(x = c(x, x[2] - x[1])), r)
+    }
 
     w <- nrow(counts[[1]])
     par(mfrow = c(w, w), mar = rep(0, 4), oma = c(1, 1, 4, 10))
