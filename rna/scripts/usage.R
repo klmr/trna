@@ -176,7 +176,7 @@ resampleCodonUsage <- function () {
     codonSampleMatrix <<- codonSampleMatrix
 }
 
-resampleExpressedCodonUssage <- function () {
+resampleExpressedCodonUsage <- function () {
     if (exists('expressedCodonSampleMatrix'))
         return()
 
