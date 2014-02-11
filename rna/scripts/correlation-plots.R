@@ -16,7 +16,7 @@ plotRnaCorrelation <- function () {
         data <- map(p(`diag<-`, NA), data)
         data <- map(p(`colnames<-`, stages), data)
         data <- map(p(`rownames<-`, stages), data)
-        plotCountMatrix(data, title, '%0.2f')
+        plotCountMatrix(data, title, '%0.2f', useSameScale = TRUE)
     }
 
     invisible(mapply(generateCorrelationPlot, names(methods), methods, titles))
