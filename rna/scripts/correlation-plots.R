@@ -110,11 +110,16 @@ plotCodonUsageForAA <- function (aa, data, name) {
 }
 
 plotCodonSampling <- function () {
-    map(.(data, name = {
-        on.exit(dev.off())
-        pdf(sprintf('plots/usage-sampling/codons-%s.pdf', name))
-        map(p(plotCodonUsageForAA, data, name), aminoAcids$Short)
-    }), codonSampleMatrix, names(codonSampleMatrix)) %|% invisible
+    doPlot <- function (data, which) {
+        map(.(data, name = {
+            on.exit(dev.off())
+            pdf(sprintf('plots/usage-sampling/codons-%s-%s.pdf', which, name))
+            map(p(plotCodonUsageForAA, data, name), aminoAcids$Short)
+        }), data, names(data))
+    }
+
+    map(doPlot, list(codonSampleMatrix, expressedCodonSampleMatrix),
+        c('all', 'expressed')) %|% invisible
 }
 
 plotAAUsage <- function (data, name) {
@@ -136,9 +141,12 @@ plotAAUsage <- function (data, name) {
 }
 
 plotAminoAcidSampling <- function () {
-    on.exit(dev.off())
-    pdf('plots/usage-sampling/amino-acids.pdf')
-    plotAAUsage(codonSampleMatrix, readable(names(codonSampleMatrix)))
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/amino-acids-%s.pdf', name))
+        plotAAUsage(data, readable(names(data)))
+    }), list(codonSampleMatrix, expressedCodonSampleMatrix),
+        c('all', 'expressed')) %|% invisible
 }
 
 if (! interactive()) {
@@ -170,6 +178,7 @@ if (! interactive()) {
 
     cat('# Generate shuffled expression codon profiles\n')
     resampleCodonUsage()
+    resampleExpressedCodonUsage()
     mkdir('plots/usage-sampling')
     plotCodonSampling()
     plotAminoAcidSampling()
