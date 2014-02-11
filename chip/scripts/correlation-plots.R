@@ -54,6 +54,11 @@ plotAcceptorSampling <- function () {
     }), acceptorSampleMatrix, names(acceptorSampleMatrix)) %|% invisible
 }
 
+plotIsotypeRadial <- function (data, col = colors[1 : ncol(data)], lwd = 2, main = as.character(substitute(data)))
+    radial.plot(data, labels = rownames(data),
+                line.col = col, lwd = lwd, show.grid.labels = 3,
+                radial.lim = c(0, 0.1), main = main)
+
 plotIsotypeUsage <- function (data, background, name) {
     n <- ncol(data[[1]]) + 1
     prepare <- cbind %|>% isotypeAbundance %|>% relativeData
@@ -61,6 +66,7 @@ plotIsotypeUsage <- function (data, background, name) {
 
     tcolors <- rep(transparent(colors, 0.2), each = n)
     lwd <- rep(c(rep(2, n - 1), 5), ncol(data) / n)
+    #' @TODO Remove, and call `plotIsotypeRadial` instead
     radial.plot(data, labels = rownames(data),
                 main = 'Isotype abundance with resampled expression',
                 line.col = tcolors, lwd = lwd, show.grid.labels = 3,
@@ -77,6 +83,11 @@ plotIsotypeSampling <- function () {
     pdf('plots/usage-sampling/amino-acids.pdf')
     plotIsotypeUsage(acceptorSampleMatrix, allBackground,
                      readable(names(acceptorSampleMatrix)))
+}
+
+plotRandomlyChosen <- function () {
+    data <- pickRandomExpressions(acceptorSampleMatrix)
+    plotIsotypeRadial(data, colors[indices(stages)], lwd = 2)
 }
 
 plotCodonsByType <- function () {
