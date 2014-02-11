@@ -38,3 +38,19 @@ isotypeAbundance <- function (acceptorAbundance) {
     data <- data[aminoAcids$Long, ]
     relativeData(data)
 }
+
+pickRandomExpressions <- function (acceptorSampleMatrix) {
+    # From the sampled tRNA gene expression values, pick random values for each
+    # amino acid to simulate an expression profile. Then check whether it
+    # corresponds closely to the actually observed amino acid usage.
+
+    pickRandom <- function (data) {
+        aas <- sample(1 : ncol(data), nrow(data))
+        idx <- cbind(indices(aas), aas)
+        distribution <- apply(idx, ROWS, .(i = data[i[1], i[2]]))
+        setNames(distribution / sum(distribution), rownames(data))
+    }
+
+    # Do it for each condition separately.
+    do.call(cbind, map(isotypeAbundance %|>% pickRandom, acceptorSampleMatrix))
+}
