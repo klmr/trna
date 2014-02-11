@@ -138,6 +138,7 @@ generateCodonBackgroundUsage <- function () {
 shuffleRows <- function (df)
     `rownames<-`(df[sample.int(nrow(df)), , drop = FALSE], rownames(df))
 
+#'@TODO Use `mrnaDoResample` to remove code redundancy
 resampleCodonUsage <- function () {
     if (exists('codonSampleMatrix'))
         return()
