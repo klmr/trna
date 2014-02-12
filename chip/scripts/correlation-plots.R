@@ -61,7 +61,7 @@ plotIsotypeRadial <- function (data, col = colors[1 : ncol(data)], lwd = 2, main
 
 plotIsotypeUsage <- function (data, background, name) {
     n <- ncol(data[[1]]) + 1
-    prepare <- cbind %|>% isotypeAbundance %|>% relativeData
+    prepare <- cbind %|>% isotypeAbundance
     data <- do.call(cbind, map(prepare, data, background))
 
     tcolors <- rep(transparent(colors, 0.2), each = n)
