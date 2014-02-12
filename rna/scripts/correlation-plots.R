@@ -7,6 +7,7 @@ plotRnaCorrelation <- function () {
     titles <- list(gene = 'Protein­coding gene expression correlation',
                    codon = 'Codon usage correlation',
                    aa = 'Amino acid usage correlation')
+
     generateCorrelationPlot <- function (name, data, title) {
         on.exit(dev.off())
         pdf(file.path('plots', 'correlation',
@@ -16,9 +17,11 @@ plotRnaCorrelation <- function () {
         data <- map(p(`diag<-`, NA), data)
         data <- map(p(`colnames<-`, stages), data)
         data <- map(p(`rownames<-`, stages), data)
-        plotCountMatrix(data, title, '%0.2f', useSameScale = TRUE)
+        plotCountMatrix(data, title, '%0.2f', commonScale = globalScale)
     }
 
+    #' @TODO Do not hard-code the value
+    globalScale <- c(0.9, 1, 0.1)
     invisible(mapply(generateCorrelationPlot, names(methods), methods, titles))
 }
 

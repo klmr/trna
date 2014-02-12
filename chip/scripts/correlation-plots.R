@@ -382,6 +382,7 @@ plotChipCorrelation <- function () {
     titles <- list(gene = 'tRNA gene expression correlation',
                    acceptor = 'tRNA isoacceptor family correlation',
                    type = 'tRNA isotype correlation')
+
     generateCorrelationPlot <- function (name, data, title) {
         on.exit(dev.off())
         pdf(file.path('plots', 'correlation',
@@ -394,10 +395,12 @@ plotChipCorrelation <- function () {
         data <- map(p(`diag<-`, NA), data)
         data <- map(p(`colnames<-`, stages), data)
         data <- map(p(`rownames<-`, stages), data)
-        plotCountMatrix(data, title, '%0.2f', useSameScale = TRUE)
+        plotCountMatrix(data, title, '%0.2f', commonScale = globalScale)
     }
 
-    invisible(mapply(generateCorrelationPlot, names(methods), methods, titles))
+    #' @TODO Do not hard-code the value
+    globalScale <- c(0.9, 1, 0.1)
+    invisible(map(generateCorrelationPlot, names(methods), methods, titles))
 }
 
 if (! interactive()) {
