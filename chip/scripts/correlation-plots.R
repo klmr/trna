@@ -202,6 +202,91 @@ findPlotMaxima <- function (trna, mrna) {
     apply(do.call(rbind, maxima), COLS, max) * 1.05
 }
 
+plotSimulatedCodonsByStage <- function (codons, acceptors) {
+    codons <- map(relativeData, codons)
+    acceptors <- map(.(acc = {
+        acc <- acceptorAbundance(acc)
+        rownames(acc) <- revcomp(rownames(acc))
+
+        # Ensure that non-used codons are present.
+        codonsOnly <- setdiff(rownames(codons[[1]]), rownames(acc))
+        codonNullRows <- do.call(rbind, map(.(. = rep(0, ncol(acc))), codonsOnly))
+        acc <- rbind(acc, codonNullRows)
+        # Make row order uniform with codons
+        as.data.frame(acc[rownames(codons[[1]]), ])
+    }), acceptors)
+
+    codonMeans <- do.call(cbind, map(rowMeans, codons))
+    acceptorMeans <- do.call(cbind, map(rowMeans, acceptors))
+    codonSd <- do.call(cbind, map(p(apply, ROWS, sd), codons))
+    acceptorSd <- do.call(cbind, map(p(apply, ROWS, sd), acceptors))
+    maxima <- c('trna' = max(acceptorMeans), 'mrna' = max(codonMeans)) * 1.05
+
+    par(mfrow = c(2, 3))
+    tissue <- 'liver'
+
+    doPlot <- function (codons, acceptors, stage) {
+        # Plot acceptor distribution against codon mean
+        codons <- rep(codons, ncol(acceptors))
+        acceptors <- do.call(c, acceptors)
+        plot(acceptors, codons,
+             xlab = 'Proportion of tRNA isoacceptors',
+             ylab = 'Proportion of mRNA codon usage',
+             main = sprintf('Codons in %s %s', readable(stage), readable(tissue)),
+             xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
+             col = transparent(ifelse(acceptors == 0, last(colors), tissueColor[tissue]), 0.1),
+             pch = 20, las = 1)
+
+        nulls <- acceptors == 0
+        cd <- data.frame(trna = acceptors[! nulls],
+                         mrna = codons[! nulls])
+        model <- lm(mrna ~ trna, cd)
+        abline(model)
+        par(usr = c(0, 1, 0, 1))
+        rho <- cor(cd$trna, cd$mrna, method = 'spearman')
+        r2 <- cor(cd$trna, cd$mrna, method = 'pearson')
+        prho <- cor.test(cd$trna, cd$mrna, method = 'spearman')$p.value
+        pr2 <- cor.test(cd$trna, cd$mrna, method = 'pearson')$p.value
+        message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
+        text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
+                               italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
+             adj = c(1.1, -0.1))
+    }
+
+    map(doPlot, as.data.frame(codonMeans), acceptors, stages)
+
+    return()
+
+    for (stage in stages) {
+        data <- columnsForCondition(acceptorMeans, codonMeans, tissue, stage)
+        sdData <- columnsForCondition(acceptorSd, codonSd, tissue, stage)
+        #se1 <- sdData$trna / sqrt(ncol(acceptors[[1]]))
+        #se2 <- sdData$mrna / sqrt(ncol(codons[[1]]))
+        se1 <- sdData$trna
+        se2 <- sdData$mrna
+        plot(data$trna, data$mrna,
+             xlab = 'Proportion of tRNA isoacceptors',
+             ylab = 'Proportion of mRNA codon usage',
+             main = sprintf('Codons in %s %s', readable(stage), readable(tissue)),
+             xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
+             col = ifelse(data$trna == 0, last(colors), tissueColor[tissue]),
+             pch = 20, las = 1)
+        symbols(data$trna, data$mrna, rectangles = cbind(se1, se2), inches = FALSE, add = TRUE)
+        cd <- data[data$trna != 0, ]
+        model <- lm(mrna ~ trna, cd)
+        abline(model)
+        par(usr = c(0, 1, 0, 1))
+        rho <- cor(cd$trna, cd$mrna, method = 'spearman')
+        r2 <- cor(cd$trna, cd$mrna, method = 'pearson')
+        prho <- cor.test(cd$trna, cd$mrna, method = 'spearman')$p.value
+        pr2 <- cor.test(cd$trna, cd$mrna, method = 'pearson')$p.value
+        message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
+        text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
+                               italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
+             adj = c(1.1, -0.1))
+    }
+}
+
 plotCodonsByStage <- function () {
     trnaCodons <- groupby(trnaNormDataCond, trnaAnnotation[rownames(trnaNormDataCond), 'Acceptor'])
     rownames(trnaCodons) <- revcomp(rownames(trnaCodons))
