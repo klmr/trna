@@ -11,10 +11,7 @@ trnaGroupFamilyAndType <- function () {
     trnaByType <<- groupby(trnaNormDataCond, trnaAnnotation$Type, sum)
 }
 
-resampleAcceptorAbundance <- function () {
-    samples <- 100
-    cds <- trnaGetCountDataSet(trnaUnfilteredRawCounts)
-    data <- trnaMergeReplicates(as.data.frame(counts(cds, normalized = TRUE)))
+trnaDoResample <- function (data) {
     data <- data[, grep('liver', colnames(data))]
     # Reorder columns by stages since they are unordered
     data <- data[, vapply(stages, grep, numeric(1), colnames(data))]
@@ -22,10 +19,19 @@ resampleAcceptorAbundance <- function () {
     sampleColumn <- function (col)
         map(.(. = shuffleRows(data[, col, drop = FALSE])), 1 : samples) %|%
         lp(do.call, cbind)
-    acceptorSampleMatrix <- setNames(map(sampleColumn, colnames(data)),
-                                     colnames(data))
+    setNames(map(sampleColumn, colnames(data)), colnames(data))
+}
 
-    acceptorSampleMatrix <<- acceptorSampleMatrix
+resampleAcceptorAbundance <- function () {
+    samples <- 100
+    cds <- trnaGetCountDataSet(trnaUnfilteredRawCounts)
+    data <- trnaMergeReplicates(as.data.frame(counts(cds, normalized = TRUE)))
+    acceptorSampleMatrix <<- trnaDoResample(data)
+}
+
+resampleExpressedAcceptorAbundance <- function () {
+    sample <- 100
+    expressedAcceptorSampleMatrix <<- trnaDoResample(trnaNormDataCond)
 }
 
 acceptorAbundance <- function (trnaAbundance) {
