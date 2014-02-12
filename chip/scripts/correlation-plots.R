@@ -290,7 +290,7 @@ plotSimulatedCodonsByStage <- function (codons, acceptors) {
     }
 }
 
-plotCodonsByStage <- function () {
+plotCodonsByStage <- function (codonUsageData) {
     trnaCodons <- groupby(trnaNormDataCond, trnaAnnotation[rownames(trnaNormDataCond), 'Acceptor'])
     rownames(trnaCodons) <- revcomp(rownames(trnaCodons))
     onlym <- setdiff(rownames(codonUsageData), rownames(trnaCodons))
@@ -406,6 +406,10 @@ if (! interactive()) {
     trnaSetupCountDataSet()
     trnaNormalizeData()
     trnaGroupFamilyAndType()
+    generateHighCodonUsageData()
+    generateLowCodonUsageData()
+    generateCodonBackgroundDist()
+    generateCodonBackgroundUsage()
 
     mkdir('plots/correlation')
     plotChipCorrelation()
@@ -423,11 +427,13 @@ if (! interactive()) {
         generateCodonUsageData()
     })
     plotCodonsByType()
-    local({
+    map(.(data, name = {
         on.exit(dev.off())
-        pdf('plots/usage/codon-scatter.pdf', width = 7, height = 10, family = plotFamily)
-        plotCodonsByStage()
-    })
+        pdf(sprintf('plots/usage/%scodon-scatter.pdf', name),
+            width = 7, height = 10, family = plotFamily)
+        plotCodonsByStage(data)
+    }), list(codonUsageData, stableCodonUsageData, lowCodonUsageData),
+        c('', 'stable-', 'low-')) %|% invisible
     local({
         on.exit(dev.off())
         pdf('plots/usage/amino-acid-scatter.pdf', width = 7, height = 10, family = plotFamily)
