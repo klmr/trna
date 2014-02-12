@@ -433,6 +433,7 @@ if (! interactive()) {
 
     cat('# Generate shuffled expression isoacceptor profiles\n')
     resampleAcceptorAbundance()
+    resampleExpressedAcceptorAbundance()
     mkdir('plots/usage-sampling')
     plotAcceptorSampling()
     plotIsotypeSampling()
