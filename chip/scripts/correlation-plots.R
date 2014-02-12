@@ -56,7 +56,7 @@ plotAcceptorSampling <- function () {
     }
 
     map(doPlot, list(acceptorSampleMatrix, expressedAcceptorSampleMatrix),
-        c('all', 'expressed')) %|% invisible
+        c('all-genes', 'expressed-genes')) %|% invisible
 }
 
 plotIsotypeRadial <- function (data, col = colors[1 : ncol(data)], lwd = 2, main = as.character(substitute(data)))
@@ -85,7 +85,7 @@ plotIsotypeSampling <- function () {
         pdf(sprintf('plots/usage-sampling/amino-acids-%s.pdf', name))
         plotIsotypeUsage(data, background, readable(names(data)))
     }), list(acceptorSampleMatrix, expressedAcceptorSampleMatrix),
-        c('all', 'expressed')) %|% invisible
+        c('all-genes', 'expressed-genes')) %|% invisible
 }
 
 plotRandomlyChosen <- function () {
@@ -205,7 +205,7 @@ findPlotMaxima <- function (trna, mrna) {
     apply(do.call(rbind, maxima), COLS, max) * 1.05
 }
 
-plotSimulatedCodonsByStage <- function (codons, acceptors) {
+prepareSimulatedCodons <- function (codons, acceptors) {
     codons <- map(relativeData, codons)
     acceptors <- map(.(acc = {
         acc <- acceptorAbundance(acc)
@@ -219,75 +219,63 @@ plotSimulatedCodonsByStage <- function (codons, acceptors) {
         as.data.frame(acc[rownames(codons[[1]]), ])
     }), acceptors)
 
-    codonMeans <- do.call(cbind, map(rowMeans, codons))
-    acceptorMeans <- do.call(cbind, map(rowMeans, acceptors))
-    codonSd <- do.call(cbind, map(p(apply, ROWS, sd), codons))
-    acceptorSd <- do.call(cbind, map(p(apply, ROWS, sd), acceptors))
-    maxima <- c('trna' = max(acceptorMeans), 'mrna' = max(codonMeans)) * 1.05
+    list(codons = codons, acceptors = acceptors)
+}
 
-    par(mfrow = c(2, 3))
-    tissue <- 'liver'
-
-    doPlot <- function (codons, acceptors, stage) {
-        # Plot acceptor distribution against codon mean
-        codons <- rep(codons, ncol(acceptors))
-        acceptors <- do.call(c, acceptors)
-        plot(acceptors, codons,
-             xlab = 'Proportion of tRNA isoacceptors',
-             ylab = 'Proportion of mRNA codon usage',
-             main = sprintf('Codons in %s %s', readable(stage), readable(tissue)),
-             xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
-             col = transparent(ifelse(acceptors == 0, last(colors), tissueColor[tissue]), 0.1),
-             pch = 20, las = 1)
-
-        nulls <- acceptors == 0
-        cd <- data.frame(trna = acceptors[! nulls],
-                         mrna = codons[! nulls])
-        model <- lm(mrna ~ trna, cd)
-        abline(model)
-        par(usr = c(0, 1, 0, 1))
-        rho <- cor(cd$trna, cd$mrna, method = 'spearman')
-        r2 <- cor(cd$trna, cd$mrna, method = 'pearson')
-        prho <- cor.test(cd$trna, cd$mrna, method = 'spearman')$p.value
-        pr2 <- cor.test(cd$trna, cd$mrna, method = 'pearson')$p.value
-        message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
-        text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
-                               italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
-             adj = c(1.1, -0.1))
+prepareSimulatedAas <- function (codons, acceptors) {
+    prepareCodon <- function (data) {
+        data <- groupby(data, geneticCode[rownames(data), 'AA'])
+        # Enforce uniform oder between tRNA and mRNA plots.
+        data <- data[aminoAcids$Short, ]
+        rownames(data) <- aminoAcids[aminoAcids$Short == rownames(data), 'Long']
+        relativeData(data)
     }
 
-    map(doPlot, as.data.frame(codonMeans), acceptors, stages)
+    prepareAcceptors <- function (data)
+        isotypeAbundance(data)[aminoAcids$Long, ]
 
-    return()
+    list(codons = map(prepareCodon, codons),
+         acceptors = map(prepareAcceptors, acceptors))
+}
 
-    for (stage in stages) {
-        data <- columnsForCondition(acceptorMeans, codonMeans, tissue, stage)
-        sdData <- columnsForCondition(acceptorSd, codonSd, tissue, stage)
-        #se1 <- sdData$trna / sqrt(ncol(acceptors[[1]]))
-        #se2 <- sdData$mrna / sqrt(ncol(codons[[1]]))
-        se1 <- sdData$trna
-        se2 <- sdData$mrna
-        plot(data$trna, data$mrna,
-             xlab = 'Proportion of tRNA isoacceptors',
-             ylab = 'Proportion of mRNA codon usage',
-             main = sprintf('Codons in %s %s', readable(stage), readable(tissue)),
-             xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
-             col = ifelse(data$trna == 0, last(colors), tissueColor[tissue]),
-             pch = 20, las = 1)
-        symbols(data$trna, data$mrna, rectangles = cbind(se1, se2), inches = FALSE, add = TRUE)
-        cd <- data[data$trna != 0, ]
-        model <- lm(mrna ~ trna, cd)
-        abline(model)
-        par(usr = c(0, 1, 0, 1))
-        rho <- cor(cd$trna, cd$mrna, method = 'spearman')
-        r2 <- cor(cd$trna, cd$mrna, method = 'pearson')
-        prho <- cor.test(cd$trna, cd$mrna, method = 'spearman')$p.value
-        pr2 <- cor.test(cd$trna, cd$mrna, method = 'pearson')$p.value
-        message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
-        text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
-                               italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
-             adj = c(1.1, -0.1))
-    }
+plotSimulatedDistribution <- function(type, codons, acceptors, datatype) {
+    prepare <- list(`amino-acids` = prepareSimulatedAas,
+                    codons = prepareSimulatedCodons)
+    data <- prepare[[datatype]](codons, acceptors)
+
+    # Calculate correlations for all tRNA simulations with the mean of the mRNA
+    # codon simulations.
+
+    codonMeans <- do.call(cbind, map(rowMeans, data$codons))
+    conditions <- colnames(codonMeans)
+
+    corr <- map(.(replicate = map(.(cond =
+                cor(codonMeans[, cond], data$acceptors[[cond]][, replicate],
+                    method = 'spearman')), conditions)),
+                1 : ncol(data$acceptors[[1]]))
+
+    pval <- map(.(replicate = map(.(cond =
+                cor.test(codonMeans[, cond], data$acceptors[[cond]][, replicate],
+                    method = 'spearman')$p.value), conditions)),
+                1 : ncol(data$acceptors[[1]]))
+
+    corr <- as.data.frame(do.call(rbind, map(unlist, corr)))
+    pval <- as.data.frame(do.call(rbind, map(unlist, pval)))
+
+    mkdir('results/usage-sampling')
+    write.table(summary(corr), sep = '\t', quote = FALSE,
+                sprintf('results/usage-sampling/%s-%s-correlations.tsv', datatype, type))
+
+    write.table(summary(pval), sep = '\t', quote = FALSE,
+                sprintf('results/usage-sampling/%s-%s-pvalues.tsv', datatype, type))
+
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/%s-%s-correlation-%s.pdf', datatype, type, name))
+        boxplot(data, pch = 16,
+                main = sprintf('Correlation coefficients of simulated %s in %s',
+                               datatype, readable(name)))
+    }), corr, colnames(corr)) %|% invisible
 }
 
 plotCodonsByStage <- function (codonUsageData) {
@@ -446,4 +434,14 @@ if (! interactive()) {
     mkdir('plots/usage-sampling')
     plotAcceptorSampling()
     plotIsotypeSampling()
+
+    plotSimulatedDistribution('all-genes', codonSampleMatrix,
+                              acceptorSampleMatrix, 'codons')
+    plotSimulatedDistribution('expressed-genes', expressedCodonSampleMatrix,
+                              expressedAcceptorSampleMatrix, 'codons')
+
+    plotSimulatedDistribution('all-genes', codonSampleMatrix,
+                              acceptorSampleMatrix, 'amino-acids')
+    plotSimulatedDistribution('expressed-genes', expressedCodonSampleMatrix,
+                              expressedAcceptorSampleMatrix, 'amino-acids')
 }
