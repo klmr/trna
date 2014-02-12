@@ -47,11 +47,16 @@ plotAcceptorAbundanceForAA <- function (aa, data, name) {
 }
 
 plotAcceptorSampling <- function () {
-    map(.(data, name = {
-        on.exit(dev.off())
-        pdf(sprintf('plots/usage-sampling/codons-%s.pdf', name))
-        map(p(plotAcceptorAbundanceForAA, data, name), aminoAcids$Short)
-    }), acceptorSampleMatrix, names(acceptorSampleMatrix)) %|% invisible
+    doPlot <- function (data, which) {
+        map(.(data, name = {
+            on.exit(dev.off())
+            pdf(sprintf('plots/usage-sampling/codons-%s-%s.pdf', which, name))
+            map(p(plotAcceptorAbundanceForAA, data, name), aminoAcids$Short)
+        }), data, names(data))
+    }
+
+    map(doPlot, list(acceptorSampleMatrix, expressedAcceptorSampleMatrix),
+        c('all', 'expressed')) %|% invisible
 }
 
 plotIsotypeRadial <- function (data, col = colors[1 : ncol(data)], lwd = 2, main = as.character(substitute(data)))
@@ -60,29 +65,27 @@ plotIsotypeRadial <- function (data, col = colors[1 : ncol(data)], lwd = 2, main
                 radial.lim = c(0, 0.1), main = main)
 
 plotIsotypeUsage <- function (data, background, name) {
-    n <- ncol(data[[1]]) + 1
+    n <- ncol(data[[1]])
     prepare <- cbind %|>% isotypeAbundance
-    data <- do.call(cbind, map(prepare, data, background))
+    data <- do.call(cbind, map(prepare, data))
+    data <- cbind(data, t(relativeData(matrix(background))))
 
-    tcolors <- rep(transparent(colors, 0.2), each = n)
-    lwd <- rep(c(rep(2, n - 1), 5), ncol(data) / n)
-    #' @TODO Remove, and call `plotIsotypeRadial` instead
-    radial.plot(data, labels = rownames(data),
-                main = 'Isotype abundance with resampled expression',
-                line.col = tcolors, lwd = lwd, show.grid.labels = 3,
-                radial.lim = c(0, 0.1))
+    tcolors <- c(rep(transparent(colors[indices(stages)], 0.2), each = n),
+                 colors['grey'])
+    plotIsotypeRadial(data, col = tcolors,
+                      main = 'Isotype abundance with resampled expression')
 }
 
 plotIsotypeSampling <- function () {
-    cds <- trnaGetCountDataSet(trnaUnfilteredRawCounts)
-    unfiltered <- trnaMergeReplicates(as.data.frame(counts(cds, normalized = TRUE)))
-    allBackground <- unfiltered[, grep('liver', colnames(unfiltered))]
-    allBackground <- allBackground[, vapply(stages, p(grep, colnames(allBackground)), numeric(1))]
+    background <- table(trnaUnfilteredAnnotation$Type)
+    background <- background[aminoAcids$Long]
 
-    on.exit(dev.off())
-    pdf('plots/usage-sampling/amino-acids.pdf')
-    plotIsotypeUsage(acceptorSampleMatrix, allBackground,
-                     readable(names(acceptorSampleMatrix)))
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/amino-acids-%s.pdf', name))
+        plotIsotypeUsage(data, background, readable(names(data)))
+    }), list(acceptorSampleMatrix, expressedAcceptorSampleMatrix),
+        c('all', 'expressed')) %|% invisible
 }
 
 plotRandomlyChosen <- function () {
