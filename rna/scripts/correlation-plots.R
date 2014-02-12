@@ -156,7 +156,8 @@ if (! interactive()) {
     generateCodonUsageData()
     loadAminoAcids()
     loadCodonMap()
-    generateStableCodonUsageData()
+    generateHighCodonUsageData()
+    generateLowCodonUsageData()
     generateCodonBackgroundDist()
     generateCodonBackgroundUsage()
 
@@ -172,6 +173,7 @@ if (! interactive()) {
 
     cat('# Generate stable mRNA codon usage plots\n')
     plotSpiderWeb('stable-', stableCodonUsageData, stableAaUsageData)
+    plotSpiderWeb('low-', lowCodonUsageData, lowAaUsageData)
 
     cat('# Generate background mRNA codon usage plots\n')
     plotCodonBackground()
