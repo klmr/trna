@@ -40,7 +40,7 @@ plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
 
     for (tissue in tissues) {
         data <- aaUsageData[, grep(tissue, colnames(aaUsageData))]
-        data$Background <- aaBackgroundDist$Count
+        data$Background <- aaBackgroundDist[, 1]
         # Enforce uniform oder between tRNA and mRNA plots.
         data <- data[aminoAcids$Short, ]
         rownames(data) <- aminoAcids[aminoAcids$Short == rownames(data), 'Long']
@@ -55,7 +55,7 @@ plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
         # Codons of Arginine
         rcodons <- rownames(subset(geneticCode, AA == 'R'))
         data <- codonUsageData[rcodons, grep(tissue, colnames(codonUsageData))]
-        data$Background <- codonBackgroundDist[rcodons, 'Count']
+        data$Background <- codonBackgroundDist[rcodons, 1]
         relative <- relativeData(data)
         pdf(sprintf('plots/usage/%sarginine-%s.pdf', type, tissue),
             width = 6, height = 6, family = plotFamily)
