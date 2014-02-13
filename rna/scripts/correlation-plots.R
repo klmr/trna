@@ -92,6 +92,7 @@ plotRnaCodonDistribution <- function (codonUsageData, name, tissue) {
             oldPar <- par(lty = 0, xpd = TRUE)
             on.exit(par(oldPar))
             barplot(mrna, horiz = TRUE, col = grays, axes = FALSE,
+                    main = sprintf('Codon usage for %s', long),
                     xlab = 'Proportion of mRNA codon usage',
                     las = 1, names.arg = readable(colnames(mrna)))
             axis(1, 0 : 4 / 4, sprintf('%d%%', 0 : 4 * 25), cex.axis = 0.75)
