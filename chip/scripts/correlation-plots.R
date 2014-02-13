@@ -311,8 +311,8 @@ plotCodonsByStage <- function (codonUsageData) {
 
     par(mfrow = c(4, 3))
 
-    for (tissue in tissues) {
-        for (stage in stages) {
+    map(.(tissue = {
+        map(.(stage = {
             data <- columnsForCondition(trna, mrna, tissue, stage)
             plot(data$trna, data$mrna,
                  xlab = 'Proportion of tRNA isoacceptors',
@@ -333,8 +333,10 @@ plotCodonsByStage <- function (codonUsageData) {
             text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
                                    italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
                  adj = c(1.1, -0.1))
-        }
-    }
+
+            rho # Return a list of the correlation coefficients
+        }), stages) %|% unlist
+    }), tissues)
 }
 
 plotAminAcidsByStage <- function () {
@@ -436,13 +438,24 @@ if (! interactive()) {
         generateCodonUsageData()
     })
     plotCodonsByType()
-    map(.(data, name = {
+
+    corr <- map(.(data, name = {
         on.exit(dev.off())
         pdf(sprintf('plots/usage/%scodon-scatter.pdf', name),
             width = 7, height = 10, family = plotFamily)
         plotCodonsByStage(data)
     }), list(codonUsageData, stableCodonUsageData, lowCodonUsageData),
-        c('', 'stable-', 'low-')) %|% invisible
+        c('', 'stable-', 'low-')) %|% p(unlist, recursive = FALSE)
+
+    local({
+        on.exit(dev.off())
+        pdf('plots/usage/condon-correlation-comparison.pdf')
+        boxplot(corr, pch = 16, las = 1, border = tissueColor[names(corr)],
+                names = rep(c('All', 'High', 'Low '), each = 2),
+                main = 'Correlation coefficients between codon usage and isoacceptor abundance',
+                ylim = c(0, 1))
+    })
+
     local({
         on.exit(dev.off())
         pdf('plots/usage/amino-acid-scatter.pdf', width = 7, height = 10, family = plotFamily)
