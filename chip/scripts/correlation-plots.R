@@ -269,10 +269,31 @@ plotSimulatedDistribution <- function(type, codons, acceptors, datatype) {
     write.table(summary(pval), sep = '\t', quote = FALSE,
                 sprintf('results/usage-sampling/%s-%s-pvalues.tsv', datatype, type))
 
+    # All boxes in one plot
+    local({
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/%s-%s-correlations.pdf', datatype, type))
+        boxplot(corr, pch = 16, las = 1,
+                names = readable(colnames(corr)),
+                main = sprintf('Correlation coefficients of simulated %s',
+                               datatype))
+    })
+
+    # All data in one box
+    local({
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/%s-%s-correlations-all-stages.pdf',
+                    datatype, type))
+        boxplot(unname(unlist(corr)), pch = 16, las = 1,
+                main = sprintf('Correlation coefficients of simulated %s',
+                               datatype))
+    })
+
+    # One plot per box, one box per stage
     map(.(data, name = {
         on.exit(dev.off())
         pdf(sprintf('plots/usage-sampling/%s-%s-correlation-%s.pdf', datatype, type, name))
-        boxplot(data, pch = 16,
+        boxplot(data, pch = 16, las = 1,
                 main = sprintf('Correlation coefficients of simulated %s in %s',
                                datatype, readable(name)))
     }), corr, colnames(corr)) %|% invisible
