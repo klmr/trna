@@ -12,12 +12,21 @@ This pipeline requires Python 2.7 and R 3.0. Dependencies on R packages are
 listed in the `DEPENDS` file. Further dependencies include:
 
 * Meme (4.9.0)
-* [klmr/rcane][] (…)
+* [klmr/rcane][] (included as submodule)
 * BioPython (>= 1.59)
-* [klmr/pygoo][] (…)
+* [klmr/pygoo][] (included as submodule)
 
-[klmr/rcane]: https://github.com/klmr/rcane/tree/…
-[klmr/pygoo]: https://github.com/klmr/pygoo/tree/…
+[klmr/rcane]: https://github.com/klmr/rcane/tree/trna-project
+[klmr/pygoo]: https://bitbucket.org/klmr/pygoo/src/?at=trna-project
+
+After pulling the repository, please do
+
+```shell
+git submodule init
+git submodule update
+```
+
+to initialise the submodules.
 
 How to run
 ----------
@@ -62,12 +71,14 @@ This is what the  directory tree of the project folder looks like:
     │   │   ├── de-hist
     │   │   ├── distribution
     │   │   ├── replicates
+    │   │   ├── usage-sampling
     │   │   └── usage
     │   ├── results
     │   │   ├── de-acc
     │   │   ├── de-genes
     │   │   ├── de-type
-    │   │   └── meme
+    │   │   ├── meme
+    │   │   └── usage-sampling
     │   └── scripts
     ├── common
     │   ├── cache
@@ -78,6 +89,7 @@ This is what the  directory tree of the project folder looks like:
         │   ├── correlation
         │   ├── de
         │   ├── distribution
+        │   ├── usage-sampling
         │   └── usage
         ├── results
         │   └── de
