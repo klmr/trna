@@ -23,6 +23,9 @@ source('plot-correlations.R')
 source('plot-radial.R')
 source('plot-codons.R')
 
+shuffleRows <- function (df)
+    `rownames<-`(df[sample.int(nrow(df)), , drop = FALSE], rownames(df))
+
 loadAminoAcids <- function () {
     aminoAcidPath <- '../common/data/amino_acids.tsv'
     aminoAcids <<- read.table(aminoAcidPath,

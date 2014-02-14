@@ -11,7 +11,12 @@ plotRnaCorrelation <- function () {
         on.exit(dev.off())
         pdf(file.path('plots', 'correlation',
                       sprintf('%s-usage', name), ext = 'pdf'))
-        plotCorrelationsFor(data, title)
+        data <- map(.(tissue = cor(data[, grep(tissue, colnames(data))],
+                                   method = 'spearman')), tissues)
+        data <- map(p(`diag<-`, NA), data)
+        data <- map(p(`colnames<-`, stages), data)
+        data <- map(p(`rownames<-`, stages), data)
+        plotCountMatrix(data, title, '%0.2f', useSameScale = TRUE)
     }
 
     invisible(mapply(generateCorrelationPlot, names(methods), methods, titles))
@@ -35,7 +40,7 @@ plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
 
     for (tissue in tissues) {
         data <- aaUsageData[, grep(tissue, colnames(aaUsageData))]
-        data$Background <- aaBackgroundDist$Count
+        data$Background <- aaBackgroundDist[, 1]
         # Enforce uniform oder between tRNA and mRNA plots.
         data <- data[aminoAcids$Short, ]
         rownames(data) <- aminoAcids[aminoAcids$Short == rownames(data), 'Long']
@@ -50,13 +55,65 @@ plotSpiderWeb <- function (type, codonUsageData, aaUsageData) {
         # Codons of Arginine
         rcodons <- rownames(subset(geneticCode, AA == 'R'))
         data <- codonUsageData[rcodons, grep(tissue, colnames(codonUsageData))]
-        data$Background <- codonBackgroundDist[rcodons, 'Count']
+        data$Background <- codonBackgroundDist[rcodons, 1]
         relative <- relativeData(data)
         pdf(sprintf('plots/usage/%sarginine-%s.pdf', type, tissue),
             width = 6, height = 6, family = plotFamily)
         plotRadial(relative, rownames(data), radial.lim = c(0, 0.3),
                    main = sprintf('Arginine codon usage across stages in %s\n', tissue))
         dev.off()
+    }
+}
+
+plotRnaCodonDistribution <- function (codonUsageData, name, tissue) {
+    on.exit(dev.off())
+    pdf(sprintf('plots/usage/%s-codons-%s.pdf', name, tissue),
+        width = 8, height = 3.5, family = plotFamily)
+
+    for (aa in aminoAcids$Short) {
+        codons <- rownames(subset(geneticCode, AA == aa))
+        if (length(codons) == 1)
+            next
+
+        mrna <- codonUsageData[codons, grep(tissue, colnames(codonUsageData))]
+        mrna <- relativeData(mrna[codons, ])
+
+        long <- subset(aminoAcids, Short == aa)$Long
+
+        colim <- sapply(stages, p(grep, colnames(mrna)))
+        mrna <- `colnames<-`(mrna[, colim], stages)
+        mrna <- mrna[, ncol(mrna) : 1]
+
+        # We shuffle the order of the colours to avoid giving the misleading
+        # impression of a gradient.
+        grays <- gray.colors(length(colors) - 1)[c(3, 6, 2, 5, 1, 4, 7)]
+
+        local({
+            oldPar <- par(lty = 0, xpd = TRUE)
+            on.exit(par(oldPar))
+            barplot(mrna, horiz = TRUE, col = grays, axes = FALSE,
+                    main = sprintf('Codon usage for %s', long),
+                    xlab = 'Proportion of mRNA codon usage',
+                    las = 1, names.arg = readable(colnames(mrna)))
+            axis(1, 0 : 4 / 4, sprintf('%d%%', 0 : 4 * 25), cex.axis = 0.75)
+            legendPos <- mrna[, ncol(mrna)]
+            legendCol <- grays[legendPos != 0]
+            legendPos <- cumsum(legendPos[legendPos != 0])
+            legend <- names(legendPos)
+            legendPos <- c(0, legendPos[-length(legendPos)])
+
+            par(usr = c(0, 1, 0, 1))
+
+            # Adjust label positions so they don’t overlap.
+            legendWidths <- strwidth(legend)
+            if (length(legend) > 1)
+                for (i in 1 : (length(legend) - 1))
+                    if (legendPos[i] + legendWidths[i] > legendPos[i + 1])
+                        legendPos[i + 1] <- legendPos[i] + legendWidths[i]
+
+            text(legendPos, 1, legend, pos = 4, col = legendCol,
+                 cex = 0.75, offset = 0.1)
+        })
     }
 }
 
@@ -105,11 +162,16 @@ plotCodonUsageForAA <- function (aa, data, name) {
 }
 
 plotCodonSampling <- function () {
-    map(.(data, name = {
-        on.exit(dev.off())
-        pdf(sprintf('plots/usage-sampling/codons-%s.pdf', name))
-        map(p(plotCodonUsageForAA, data, name), aminoAcids$Short)
-    }), codonSampleMatrix, names(codonSampleMatrix)) %|% invisible
+    doPlot <- function (data, which) {
+        map(.(data, name = {
+            on.exit(dev.off())
+            pdf(sprintf('plots/usage-sampling/codons-%s-%s.pdf', which, name))
+            map(p(plotCodonUsageForAA, data, name), aminoAcids$Short)
+        }), data, names(data))
+    }
+
+    map(doPlot, list(codonSampleMatrix, expressedCodonSampleMatrix),
+        c('all', 'expressed')) %|% invisible
 }
 
 plotAAUsage <- function (data, name) {
@@ -131,9 +193,12 @@ plotAAUsage <- function (data, name) {
 }
 
 plotAminoAcidSampling <- function () {
-    on.exit(dev.off())
-    pdf('plots/usage-sampling/amino-acids.pdf')
-    plotAAUsage(codonSampleMatrix, readable(names(codonSampleMatrix)))
+    map(.(data, name = {
+        on.exit(dev.off())
+        pdf(sprintf('plots/usage-sampling/amino-acids-%s.pdf', name))
+        plotAAUsage(data, readable(names(data)))
+    }), list(codonSampleMatrix, expressedCodonSampleMatrix),
+        c('all', 'expressed')) %|% invisible
 }
 
 if (! interactive()) {
@@ -143,7 +208,8 @@ if (! interactive()) {
     generateCodonUsageData()
     loadAminoAcids()
     loadCodonMap()
-    generateStableCodonUsageData()
+    generateHighCodonUsageData()
+    generateLowCodonUsageData()
     generateCodonBackgroundDist()
     generateCodonBackgroundUsage()
 
@@ -159,12 +225,16 @@ if (! interactive()) {
 
     cat('# Generate stable mRNA codon usage plots\n')
     plotSpiderWeb('stable-', stableCodonUsageData, stableAaUsageData)
+    plotSpiderWeb('low-', lowCodonUsageData, lowAaUsageData)
+    plotRnaCodonDistribution(stableCodonUsageData, 'stable', 'liver')
+    plotRnaCodonDistribution(lowCodonUsageData, 'low', 'liver')
 
     cat('# Generate background mRNA codon usage plots\n')
     plotCodonBackground()
 
     cat('# Generate shuffled expression codon profiles\n')
     resampleCodonUsage()
+    resampleExpressedCodonUsage()
     mkdir('plots/usage-sampling')
     plotCodonSampling()
     plotAminoAcidSampling()
