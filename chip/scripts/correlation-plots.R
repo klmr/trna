@@ -72,6 +72,7 @@ plotIsotypeUsage <- function (data, background, name) {
 
     tcolors <- c(rep(transparent(colors[indices(stages)], 0.2), each = n),
                  colors['grey'])
+    par(oma = rep(5, 4))
     plotIsotypeRadial(data, col = tcolors,
                       main = 'Isotype abundance with resampled expression')
 }
