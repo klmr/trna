@@ -1,13 +1,22 @@
-plotCountMatrix <- function (counts, main, format = '%s', useSameScale = FALSE) {
+findMatrixScale <- function (...) {
+    args <- list(...)
+    scales <- do.call(rbind, map(p(range, na.rm = TRUE), args))
+    combined <- c(min(scales[, 1]), max(scales[, 2]))
+    c(combined, combined[2] - combined[1])
+}
+
+plotCountMatrix <- function (counts, main, format = '%s', commonScale = FALSE) {
     cols <- 100
     gradient <- function (tissue)
         colorRampPalette(c('white', tissueColor[tissue]),
                          interpolate = 'spline')(cols + 1)
     colors <- map(gradient, tissues)
 
-    range <- if (useSameScale) {
+    range <- if (isTRUE(commonScale)) {
         r <- range(counts, na.rm = TRUE)
         setNames(rep(list(c(r, r[2] - r[1])), 2), names(counts))
+    } else if (is.numeric(commonScale)) {
+        setNames(rep(list(commonScale), 2), names(counts))
     } else {
         r <- map(p(range, na.rm = TRUE), counts)
         map(.(x = c(x, x[2] - x[1])), r)
