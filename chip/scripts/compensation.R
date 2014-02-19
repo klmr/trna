@@ -257,4 +257,20 @@ if (! interactive()) {
         }), examples)
 
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
+
+    # To look at correlation coefficients, filter everything with less than
+    # ten correlation data points (i.e. four genes per acceptor).
+
+    useOnly <- map(item('observations') %|>% length %|>% p(`>`, 10),
+                   compensationData) %|% unlist
+    # Perform stringent multiple testing correction
+    testValues <- pvalues[useOnly]
+    testValues <- sort(testValues)
+    testValues <- cbind(pvalue = testValues,
+                        adjusted = p.adjust(testValues, method = 'bonferroni'))
+
+    output <- 'results/compensation/'
+    mkdir(output)
+    write.table(testValues, file.path(output, 'tested-isoacceptors.tsv'),
+                sep = '\t', quote = FALSE, col.names = NA)
 }
