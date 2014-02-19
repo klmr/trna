@@ -63,39 +63,49 @@ instructions how to generate the file and how to interpret it.
 
 This is what the  directory tree of the project folder looks like:
 
-    <tRNA project>
-    ├── chip
-    │   ├── plots
-    │   │   ├── colocalization
-    │   │   ├── compensation
-    │   │   ├── correlation
-    │   │   ├── de
-    │   │   ├── de-hist
-    │   │   ├── distribution
-    │   │   ├── replicates
-    │   │   ├── usage-sampling
-    │   │   └── usage
-    │   ├── results
-    │   │   ├── de-acc
-    │   │   ├── de-genes
-    │   │   ├── de-type
-    │   │   ├── meme
-    │   │   └── usage-sampling
-    │   └── scripts
-    ├── common
-    │   ├── cache
-    │   ├── data
-    │   └── scripts
-    └── rna
-        ├── plots
-        │   ├── correlation
-        │   ├── de
-        │   ├── distribution
-        │   ├── usage-sampling
-        │   └── usage
-        ├── results
-        │   └── de
-        └── scripts
+<!--
+tree -d -L 3 | tail -n +2 | sed '$d' | tr -d '│─' | tr '├└' '*' | sed 's/[[:space:]]/ /g' | sed 's/^\( *\* \)\(.*\)/\1`\2`/'
+-->
+
+* `chip`
+   * `plots`
+      * [`colocalization`](#colocalization)
+      * [`compensation`](#compensation)
+      * [`correlation`](#correlation)
+      * [`de`](#chip-de)
+      * [`de-hist`](#chip-de-histograms)
+      * [`distribution`](#chip-distribution)
+      * [`replicates`](#chip-replicates)
+      * [`usage`](#chip-usage)
+      * [`usage-sampling`](#chip-usage-sampling)
+   * `results`
+      * [`active-genes`](#active-genes)
+      * `de-acc`
+      * `de-genes`
+      * `de-type`
+      * [`meme`](#meme)
+      * [`usage-sampling`](#chip-usage-sampling)
+   * `scripts`
+* `common`
+   * `cache`
+   * `data`
+      * `meme`
+   * `scripts`
+       * `rcane`
+* `rna`
+    * `plots`
+       * `correlation`
+       * `de`
+       * `distribution`
+       * `usage`
+       * `usage-sampling`
+    * `results`
+       * `de`
+       * `usage-sampling`
+    * `scripts`
+        * `goo`
+
+<!-- -->
 
 The **`*/scripts`** directories contain the source code of the pipeline contained in
 this project.
@@ -122,3 +132,15 @@ which are *solely* based on the RNA-seq data and not on ChIP-seq data.
 The **`{chip,rna}/results`** directories contain any additional results which
 are not in the form of plots. These are tables and raw text files, as well as
 HTML files for the Meme analysis.
+
+The following contains a breakdown of the individual directories.
+
+### Colocalization
+
+### Compensation
+
+### Correlation
+
+### ChIP DE
+
+### ChIP DE Histograms
