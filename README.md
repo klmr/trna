@@ -5,11 +5,13 @@ This repository contains the downstream analysis pipeline of the Schmitt,
 Rudolph & al. paper. You can find information on how to run the pipeline or use
 individual components in the following sections. Enjoy!
 
+Please consult the online methods for more details.
+
 Dependencies
 ------------
 
 This pipeline requires Python 2.7 and R 3.0. Dependencies on R packages are
-listed in the `DEPENDS` file. Further dependencies include:
+listed in the `DEPENDS` file. Further dependencies are:
 
 * Meme (4.9.0)
 * [klmr/rcane][] (included as submodule)
