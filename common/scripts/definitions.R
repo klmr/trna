@@ -1,5 +1,4 @@
-#' @TODO This is currently NOT portable! Switch to modules!
-source('../../../../scripts/basic.R', chdir = TRUE)
+xsource(rcane.basic)
 
 tissues <- c(liver = 'liver', brain = 'brain')
 stages <- c('e15.5', 'e18.5', 'P0.5', 'P4', 'P22', 'P29')
@@ -22,6 +21,10 @@ source('plot-pca.R')
 source('plot-pairwise.R')
 source('plot-correlations.R')
 source('plot-radial.R')
+source('plot-codons.R')
+
+shuffleRows <- function (df)
+    `rownames<-`(df[sample.int(nrow(df)), , drop = FALSE], rownames(df))
 
 loadAminoAcids <- function () {
     aminoAcidPath <- '../common/data/amino_acids.tsv'

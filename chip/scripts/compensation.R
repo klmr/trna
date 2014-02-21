@@ -196,37 +196,46 @@ if (! interactive()) {
 
     tissue <- 'liver'
     testSet <- unique(trnaAnnotation$Acceptor)
-    progress(0, length(testSet))
-    compensationData <- setNames(map(.(acceptor, i = {
-        correlations <- isoacceptorCorrelations(acceptor, tissue)
-        if (is.null(correlations))
-            return()
-        correlations <- correlations[upper.tri(correlations)]
 
-        geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
-        cols <- tissueCols(tissue)
-        genes <- trnaNormDataCond[geneIds, cols]
+    compensationFile <- '../common/cache/compensation.RData'
 
-        permutations <- permn(ncol(genes))
+    loaded <- tryCatch(load(compensationFile), error = .(. = ''))
+    if (! identical(loaded, 'compensationData')) {
+        message('Re-generating compensation analysis data')
+        progress(0, length(testSet))
+        compensationData <- setNames(map(.(acceptor, i = {
+            correlations <- isoacceptorCorrelations(acceptor, tissue)
+            if (is.null(correlations))
+                return()
+            correlations <- correlations[upper.tri(correlations)]
 
-        permCor <- function (genes, gene, perm)
-            map(.(other = cor(as.numeric(genes[gene, ]),
-                              as.numeric(genes[other, perm]),
-                              method = 'spearman')),
-                (1 : nrow(genes))[-gene])
+            geneIds <- rownames(subset(trnaAnnotation, Acceptor == acceptor))
+            cols <- tissueCols(tissue)
+            genes <- trnaNormDataCond[geneIds, cols]
 
-        map(.(gene = map(.(p = permCor(genes, gene, p)), permutations)),
-            1 : nrow(genes)) -> background
+            permutations <- permn(ncol(genes))
 
-        progress(i, length(testSet))
-        structure(list(acceptor = acceptor,
-                       observations = correlations,
-                       background = unlist(background)),
-                  class = 'compensation2')
-    }), testSet, indices(testSet)), testSet)
-    progress(1, 1)
+            permCor <- function (genes, gene, perm)
+                map(.(other = cor(as.numeric(genes[gene, ]),
+                                  as.numeric(genes[other, perm]),
+                                  method = 'spearman')),
+                    (1 : nrow(genes))[-gene])
 
-    compensationData <- filter(neg(is.null), compensationData)
+            map(.(gene = map(.(p = permCor(genes, gene, p)), permutations)),
+                1 : nrow(genes)) -> background
+
+            progress(i, length(testSet))
+            structure(list(acceptor = acceptor,
+                           observations = correlations,
+                           background = unlist(background)),
+                      class = 'compensation2')
+        }), testSet, indices(testSet)), testSet)
+        progress(1, 1)
+
+        compensationData <- filter(neg(is.null), compensationData)
+
+        save(compensationData, file = compensationFile)
+    }
 
     local({
         on.exit(dev.off())
@@ -248,4 +257,20 @@ if (! interactive()) {
         }), examples)
 
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
+
+    # To look at correlation coefficients, filter everything with less than
+    # ten correlation data points (i.e. four genes per acceptor).
+
+    useOnly <- map(item('observations') %|>% length %|>% p(`>`, 10),
+                   compensationData) %|% unlist
+    # Perform stringent multiple testing correction
+    testValues <- pvalues[useOnly]
+    testValues <- sort(testValues)
+    testValues <- cbind(pvalue = testValues,
+                        adjusted = p.adjust(testValues, method = 'bonferroni'))
+
+    output <- 'results/compensation/'
+    mkdir(output)
+    write.table(testValues, file.path(output, 'tested-isoacceptors.tsv'),
+                sep = '\t', quote = FALSE, col.names = NA)
 }

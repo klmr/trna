@@ -93,27 +93,30 @@ trnaSetupCountDataSet <- function () {
     trnaCds <<- estimateDispersions(trnaGetCountDataSet(trnaRawCounts))
 }
 
+trnaMergeReplicates <- function (normData) {
+    conditions <- unique(trnaMapping$Condition)
+
+    merged <- matrix(nrow = nrow(normData), ncol = length(conditions))
+    colnames(merged) <- conditions
+    rownames(merged) <- rownames(normData)
+
+    for (cond in conditions) {
+        replicates = normData[, rownames(trnaMapping[trnaMapping$Condition == cond, ])]
+        if (! is.data.frame(replicates))
+            merged[, cond] <- replicates
+        else
+            merged[, cond] <- rowMeans(replicates)
+    }
+
+    as.data.frame(merged)
+}
+
 trnaNormalizeData <- function () {
     if (exists('trnaNormData'))
         return()
 
-    trnaNormData <- as.data.frame(counts(trnaCds, normalized = TRUE))
-    conditions <- unique(trnaMapping$Condition)
-
-    trnaNormDataCond <- matrix(nrow = nrow(trnaNormData), ncol = length(conditions))
-    colnames(trnaNormDataCond) <- conditions
-    rownames(trnaNormDataCond) <- rownames(trnaNormData)
-
-    for (cond in conditions) {
-        replicates = trnaNormData[, rownames(trnaMapping[trnaMapping$Condition == cond, ])]
-        if (! is.data.frame(replicates))
-            trnaNormDataCond[, cond] <- replicates
-        else
-            trnaNormDataCond[, cond] <- rowMeans(replicates)
-    }
-
-    trnaNormData <<- trnaNormData
-    trnaNormDataCond <<- as.data.frame(trnaNormDataCond)
+    trnaNormData <<- as.data.frame(counts(trnaCds, normalized = TRUE))
+    trnaNormDataCond <<- trnaMergeReplicates(trnaNormData)
 }
 # }}}
 
