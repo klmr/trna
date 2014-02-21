@@ -113,24 +113,30 @@ testColocalization <- function () {
     mkdir(path)
     maxProgress <- length(tissues) * 3 * 3
     currentProgress <- 0
-    for (tissue in tissues) {
-        for (threshold in c(0.1, 0.05, 0.01)) {
-            for (windowSize in c(10000, 50000, 100000)) {
+    # Needed for progress counter
+    env <- environment()
+
+    pvalues <- lapply(tissues, function (tissue) {
+        lapply(c(0.1, 0.05, 0.01), function (threshold) {
+            lapply(c(10000, 50000, 100000), function (windowSize) {
                 progress(currentProgress, maxProgress)
-                currentProgress <- currentProgress + 1
+                assign('currentProgress', get('currentProgress', envir = env) + 1,
+                       envir = env)
+
                 stage <- stages[[tissue]]
                 stat <- colocalizationForContrast(tissue, stage[1], stage[2],
                                                   threshold, windowSize)
-                local({
-                    cond <- sprintf('%s-theta_%s-w_%s', tissue, threshold, windowSize)
-                    on.exit(dev.off())
-                    pdf(file.path(path, cond, ext = 'pdf'), family = plotFamily)
-                    plot(stat, col = colors, lwd = 3)
-                })
-            }
-        }
-    }
+
+                cond <- sprintf('%s-theta_%s-w_%s', tissue, threshold, windowSize)
+                on.exit(dev.off())
+                pdf(file.path(path, cond, ext = 'pdf'), family = plotFamily)
+                plot(stat, col = colors, lwd = 3)
+                ks.test(stat)$p.value
+            })
+        })
+    })
     progress(currentProgress, maxProgress)
+    pvalues
 }
 
 if (! interactive()) {
@@ -141,5 +147,8 @@ if (! interactive()) {
     mrnaLoadData()
     mrnaPairwiseDifferentialExpression()
 
-    testColocalization()
+    pvalues <- testColocalization()
+    adjusted <- unname(p.adjust(unlist(pvalues), method = 'bonferroni'))
+    cat('Bonferroni-adjusted p-values of colocalization analyses:\n')
+    map(p(cat, '\n'), adjusted) %|% invisible
 }
