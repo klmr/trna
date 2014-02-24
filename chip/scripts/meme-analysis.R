@@ -178,19 +178,26 @@ if (! interactive()) {
     trnaPairwiseDiffentialExpression()
 
     require(gtools)
-    stagePairs <- combinations(length(stages), 2, stages, set = FALSE)
-    stagePairWithTissues <- expand.grid(1 : nrow(stagePairs), tissues)
-    stagePairWithTissues <- cbind(stagePairWithTissues[, 2, drop = FALSE],
-                                  stagePairs[stagePairWithTissues[, 1], ])
 
-    motifBindingSites <- apply(stagePairWithTissues, ROWS,
-                               .(x = runTomtomForStage(x[1], x[2], x[3])))
+    motifCacheFile <- '../common/cache/motif-binding-sites.RData'
+    loaded <- tryCatch(load(motifCacheFile), error = .(. = ''))
 
-    motifBindingSites <- map(lp(do.call, rbind),
-                             filter(neg(is.null), motifBindingSites))
+    if (! identical(loaded, 'motifBindingSites')) {
+        cat('Re-running MEME analysis\n')
+        stagePairs <- combinations(length(stages), 2, stages, set = FALSE)
+        stagePairWithTissues <- expand.grid(1 : nrow(stagePairs), tissues)
+        stagePairWithTissues <- cbind(stagePairWithTissues[, 2, drop = FALSE],
+                                      stagePairs[stagePairWithTissues[, 1], ])
 
-    motifBindingSites <- do.call(rbind, motifBindingSites)
-    save(motifBindingSites, file = '../common/cache/motif-binding-sites.RData')
+        motifBindingSites <- apply(stagePairWithTissues, ROWS,
+                                   .(x = runTomtomForStage(x[1], x[2], x[3])))
+
+        motifBindingSites <- map(lp(do.call, rbind),
+                                 filter(neg(is.null), motifBindingSites))
+
+        motifBindingSites <- do.call(rbind, motifBindingSites)
+        save(motifBindingSites, file = motifCacheFile)
+    }
 
     mkdir('plots/meme')
     local({
