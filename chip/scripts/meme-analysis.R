@@ -193,6 +193,13 @@ if (! interactive()) {
     motifBindingSites <- do.call(rbind, motifBindingSites)
     save(motifBindingSites, file = '../common/cache/motif-binding-sites.RData')
 
+    mkdir('plots/meme')
+    local({
+        on.exit(dev.off())
+        pdf('plots/meme/pvalues.pdf')
+        hist(motifBindingSites$pvalue, breaks = 20, col = 'gray', border = 'gray')
+    })
+
     #' @TODO Re-adjust FDRs based on total list of motifs over all Tomtom runs
     #' @TODO Save list as result
 
