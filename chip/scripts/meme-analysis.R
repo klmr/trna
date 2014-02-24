@@ -1,10 +1,9 @@
 source('scripts/de.R')
 source('scripts/expressed-per-stage.R')
 
-memePath <- '/usr/local/Cellar/meme/4.9.0-p4/bin'
-memeBin <- file.path(memePath, 'meme')
-dustBin <- file.path(memePath, 'dust')
-tomtomBin <- file.path(memePath, 'tomtom')
+memeBin <- 'meme'
+dustBin <- 'dust'
+tomtomBin <- 'tomtom'
 filterFastaBin <- '../common/scripts/filter-fasta'
 markovModelBin <- '../common/scripts/markov-model-from-fasta'
 trnaUpstreamFastaFile <- '../common/data/trna-upstream-with-ids.fasta'
