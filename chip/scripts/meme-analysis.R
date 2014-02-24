@@ -206,8 +206,27 @@ if (! interactive()) {
         hist(motifBindingSites$pvalue, breaks = 20, col = 'gray', border = 'gray')
     })
 
-    #' @TODO Re-adjust FDRs based on total list of motifs over all Tomtom runs
-    #' @TODO Save list as result
+    # Ooops, I threw away the relevant conditons. Use `grep` to retrieve them.
+
+    condForResult <- function (queryId) {
+        hitfiles <- system(sprintf('echo results/meme/*/*/result/%s',
+                                   queryId), intern = TRUE)
+        pattern <- '^.*/(liver|brain)/([^/]*)/.*$'
+        sub(pattern, '\\1-\\2', hitfiles)
+    }
+    condForResult <- Vectorize(condForResult)
+
+    significantSites <- subset(motifBindingSites, qvalue < 0.05)
+    significantSites <- cbind(Condition = condForResult(significantSites$QueryID),
+                              significantSites)
+
+    allSites <- motifBindingSites[order(motifBindingSites$qvalue), ]
+    allSites <- cbind(Condition = condForResult(allSites$QueryID), allSites)
+
+    write.table(significantSites, file = 'results/meme/significant.tsv',
+                sep = '\t', quote = FALSE, col.names = NA)
+    write.table(allSites, file= 'results/meme/all-motifs.tsv',
+                sep = '\t', quote = FALSE, col.names = NA)
 
     # Just to check whether we actually find anything.
     # Takes very long and yields no interesting results.
