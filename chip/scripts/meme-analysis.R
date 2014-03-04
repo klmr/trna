@@ -1,10 +1,9 @@
 source('scripts/de.R')
 source('scripts/expressed-per-stage.R')
 
-memePath <- '/usr/local/Cellar/meme/4.9.0-p4/bin'
-memeBin <- file.path(memePath, 'meme')
-dustBin <- file.path(memePath, 'dust')
-tomtomBin <- file.path(memePath, 'tomtom')
+memeBin <- 'meme'
+dustBin <- 'dust'
+tomtomBin <- 'tomtom'
 filterFastaBin <- '../common/scripts/filter-fasta'
 markovModelBin <- '../common/scripts/markov-model-from-fasta'
 trnaUpstreamFastaFile <- '../common/data/trna-upstream-with-ids.fasta'
@@ -179,22 +178,55 @@ if (! interactive()) {
     trnaPairwiseDiffentialExpression()
 
     require(gtools)
-    stagePairs <- combinations(length(stages), 2, stages, set = FALSE)
-    stagePairWithTissues <- expand.grid(1 : nrow(stagePairs), tissues)
-    stagePairWithTissues <- cbind(stagePairWithTissues[, 2, drop = FALSE],
-                                  stagePairs[stagePairWithTissues[, 1], ])
 
-    motifBindingSites <- apply(stagePairWithTissues, ROWS,
-                               .(x = runTomtomForStage(x[1], x[2], x[3])))
+    motifCacheFile <- '../common/cache/motif-binding-sites.RData'
+    loaded <- tryCatch(load(motifCacheFile), error = .(. = ''))
 
-    motifBindingSites <- map(lp(do.call, rbind),
-                             filter(neg(is.null), motifBindingSites))
+    if (! identical(loaded, 'motifBindingSites')) {
+        cat('Re-running MEME analysis\n')
+        stagePairs <- combinations(length(stages), 2, stages, set = FALSE)
+        stagePairWithTissues <- expand.grid(1 : nrow(stagePairs), tissues)
+        stagePairWithTissues <- cbind(stagePairWithTissues[, 2, drop = FALSE],
+                                      stagePairs[stagePairWithTissues[, 1], ])
 
-    motifBindingSites <- do.call(rbind, motifBindingSites)
-    save(motifBindingSites, file = '../common/cache/motif-binding-sites.RData')
+        motifBindingSites <- apply(stagePairWithTissues, ROWS,
+                                   .(x = runTomtomForStage(x[1], x[2], x[3])))
 
-    #' @TODO Re-adjust FDRs based on total list of motifs over all Tomtom runs
-    #' @TODO Save list as result
+        motifBindingSites <- map(lp(do.call, rbind),
+                                 filter(neg(is.null), motifBindingSites))
+
+        motifBindingSites <- do.call(rbind, motifBindingSites)
+        save(motifBindingSites, file = motifCacheFile)
+    }
+
+    mkdir('plots/meme')
+    local({
+        on.exit(dev.off())
+        pdf('plots/meme/pvalues.pdf')
+        hist(motifBindingSites$pvalue, breaks = 20, col = 'gray', border = 'gray')
+    })
+
+    # Ooops, I threw away the relevant conditons. Use `grep` to retrieve them.
+
+    condForResult <- function (queryId) {
+        hitfiles <- system(sprintf('echo results/meme/*/*/result/%s',
+                                   queryId), intern = TRUE)
+        pattern <- '^.*/(liver|brain)/([^/]*)/.*$'
+        sub(pattern, '\\1-\\2', hitfiles)
+    }
+    condForResult <- Vectorize(condForResult)
+
+    significantSites <- subset(motifBindingSites, qvalue < 0.05)
+    significantSites <- cbind(Condition = condForResult(significantSites$QueryID),
+                              significantSites)
+
+    allSites <- motifBindingSites[order(motifBindingSites$qvalue), ]
+    allSites <- cbind(Condition = condForResult(allSites$QueryID), allSites)
+
+    write.table(significantSites, file = 'results/meme/significant.tsv',
+                sep = '\t', quote = FALSE, col.names = NA)
+    write.table(allSites, file= 'results/meme/all-motifs.tsv',
+                sep = '\t', quote = FALSE, col.names = NA)
 
     # Just to check whether we actually find anything.
     # Takes very long and yields no interesting results.

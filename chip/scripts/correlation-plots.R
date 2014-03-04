@@ -421,10 +421,6 @@ if (! interactive()) {
     trnaSetupCountDataSet()
     trnaNormalizeData()
     trnaGroupFamilyAndType()
-    generateHighCodonUsageData()
-    generateLowCodonUsageData()
-    generateCodonBackgroundDist()
-    generateCodonBackgroundUsage()
 
     mkdir('plots/correlation')
     plotChipCorrelation()
@@ -440,6 +436,11 @@ if (! interactive()) {
         oldwd <- getwd(); on.exit(setwd(oldwd))
         setwd('../rna')
         generateCodonUsageData()
+
+        generateHighCodonUsageData()
+        generateLowCodonUsageData()
+        generateCodonBackgroundDist()
+        generateCodonBackgroundUsage()
     })
     plotCodonsByType()
 
@@ -453,7 +454,7 @@ if (! interactive()) {
 
     local({
         on.exit(dev.off())
-        pdf('plots/usage/condon-correlation-comparison.pdf')
+        pdf('plots/usage/codon-correlation-comparison.pdf')
         boxplot(corr, pch = 16, las = 1, border = tissueColor[names(corr)],
                 names = rep(c('All', 'High', 'Low '), each = 2),
                 main = 'Correlation coefficients between codon usage and isoacceptor abundance',
@@ -472,6 +473,9 @@ if (! interactive()) {
     mkdir('plots/usage-sampling')
     plotAcceptorSampling()
     plotIsotypeSampling()
+
+    resampleCodonUsage()
+    resampleExpressedCodonUsage()
 
     plotSimulatedDistribution('all-genes', codonSampleMatrix,
                               acceptorSampleMatrix, 'codons')
