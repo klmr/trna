@@ -267,7 +267,7 @@ if (! interactive()) {
     testValues <- pvalues[useOnly]
     testValues <- sort(testValues)
     testValues <- cbind(pvalue = testValues,
-                        adjusted = p.adjust(testValues, method = 'bonferroni'))
+                        adjusted = p.adjust(testValues, method = 'fdr'))
 
     output <- 'results/compensation/'
     mkdir(output)
