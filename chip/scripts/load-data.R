@@ -69,10 +69,9 @@ getExpressedtRNAs <- function (counts) {
         apply(meetsThreshold[, dosForCondition(cond)], ROWS, all)
 
     # Value determined by examining the data.
-    threshold <- 10
     conditions <- unique(trnaMapping[colnames(counts), 'Condition'])
 
-    meetsThreshold <- counts > 10
+    meetsThreshold <- counts > trnaExpressedThreshold
     meetsThresholdPerCond <- sapply(conditions, tRNAsInCondition)
     trnasExpressed <- apply(meetsThresholdPerCond, ROWS, any)
     names(trnasExpressed[trnasExpressed])

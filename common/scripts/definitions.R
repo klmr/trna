@@ -5,6 +5,7 @@ stages <- c('e15.5', 'e18.5', 'P0.5', 'P4', 'P22', 'P29')
 names(stages) <- stages
 
 fdrThreshold <- 0.001
+trnaExpressedThreshold <- 10
 
 colors <- c("#597CCB", "#3D8E11", "#7C0D0C", "#C47E1F", "#603D71", "#CE4A92", "#A4B962")
 colors <- c(colors, grey = '#4C4C4C')
