@@ -1,9 +1,5 @@
 source('scripts/de.R')
 
-countsForCondition <- function (conditions)
-    trnaRawCounts[, colnames(trnaRawCounts) %in%
-                    rownames(trnaMapping)[trnaMapping$Condition %in% conditions]]
-
 if (! interactive()) {
     cat('Compute list of genes expressed in each stage\n')
     trnaLoadData()
