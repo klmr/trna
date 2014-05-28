@@ -11,7 +11,8 @@ Dependencies
 ------------
 
 This pipeline requires Python 2.7 and R 3.0. Dependencies on R packages are
-listed in the `DEPENDS` file. Further dependencies are:
+listed [in the `DEPENDS` file](https://github.com/klmr/trna/blob/master/DEPENDS).
+Further dependencies are:
 
 * Meme (4.9.0)
 * [klmr/rcane][] (included as submodule)
