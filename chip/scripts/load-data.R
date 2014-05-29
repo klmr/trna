@@ -58,8 +58,9 @@ trnaLoadData <- function () {
 }
 
 countsForCondition <- function (conditions)
-    trnaRawCounts[, colnames(trnaRawCounts) %in%
-                    rownames(trnaMapping)[trnaMapping$Condition %in% conditions]]
+    let(counts = trnaNormData,
+        counts[, colnames(counts) %in%
+               rownames(trnaMapping)[trnaMapping$Condition %in% conditions]])
 
 getExpressedtRNAs <- function (counts) {
     # Filter out tRNAs which are unexpressed across all conditions.
