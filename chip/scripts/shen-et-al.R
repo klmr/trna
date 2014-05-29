@@ -83,5 +83,16 @@ if (! interactive()) {
                             .(mark = testMark('liver-P29', mark, windowSize)))) %|%
         lp(map, unlist) %|% lp(do.call, rbind)
 
-    allTests <- sapply(c(100, 500, 1000), testAllMarks, simplify = FALSE)
+    windowSizes <- c(100, 500, 1000)
+    allTests <- setNames(lapply(windowSizes, testAllMarks), windowSizes)
+
+    mkdir('results/shen')
+
+    writeExpressedData <- function (name, data) {
+        filename = sprintf('results/shen/expressed-enrichment-pval-ws-%s.tsv',
+                           name)
+        write.table(data, filename, sep = '\t', quote = FALSE, col.names = NA)
+    }
+
+    map(writeExpressedData, names(allTests), allTests) %|% invisible
 }
