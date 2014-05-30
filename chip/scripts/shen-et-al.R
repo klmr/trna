@@ -53,12 +53,28 @@ testMark <- function (condition, marks, windowSize)
                                  inactivePositions(condition),
                                  marks, windowSize)$p.value
 
+testUpregulatedGeneMarkEnrichment <- function (genes, marks, windowSize, threshold) {
+    de <- deGenes(genes, threshold)
+    # NB: Yes, `< 0` is correct: we look at contrast A–B and want to know which
+    # genes are more highly expressed in contrast A, i.e. whose expression gets
+    # lowered in B compared to A.
+    up <- subset(de, log2FoldChange < 0)
+    #down <- subset(de, log2FoldChange > 0)
+    down <- setdiff(genes, up)
+
+    testActiveGeneMarkEnrichment(genePositions(up, trnaAnnotation),
+                                 genePositions(down, trnaAnnotation),
+                                 marks, windowSize)$p.value
+}
+
 if (! interactive()) {
-    cat('# Generating colocalisation with H3K43me from Shen et al\n')
+    cat('# Generate colocalisation with histone marks from Shen et al\n')
 
     trnaLoadData()
     trnaSetupCountDataSet()
     trnaPairwiseDiffentialExpression()
+
+    cat('# Test for enrichment of marks near active tRNA genes\n')
 
     loadMarks <- function (condition, mark) {
         x <- read.table(list.files(shenPath, sprintf('^%s.%s', condition, mark),
@@ -68,31 +84,73 @@ if (! interactive()) {
     }
 
     shenPath = '../common/data/shen-et-al/'
-    marks <- c('h3k4me3', 'enhancer', 'h3k27ac', 'polII', 'ctcf')
+    markNames <- c('h3k4me3', 'enhancer', 'h3k27ac', 'polII', 'ctcf')
     liverMarkConditions <- c('e14.5-liver', 'liver')
+    brainMarkConditions <- c('e14.5-brain', 'cortex', 'cerebellum')
 
-    liverMarks <- lapply(liverMarkConditions,
-                         .(cond = setNames(lapply(marks, lp(loadMarks, cond)),
-                                           marks))) %|%
-        p(setNames, liverMarkConditions)
+    loadAllMarks <- function (conditions)
+        lapply(conditions,
+               .(cond = lapply(markNames, lp(loadMarks, cond)) %|%
+                 p(setNames, markNames))) %|%
+        p(setNames, conditions)
 
-    testAllMarks <- function (windowSize)
-        list(embryo = sapply(liverMarks$`e14.5-liver`,
-                             .(mark = testMark('liver-e15.5', mark, windowSize))),
-             adult = sapply(liverMarks$liver,
-                            .(mark = testMark('liver-P29', mark, windowSize)))) %|%
+    liverMarks <- loadAllMarks(liverMarkConditions)
+    names(liverMarks) <- c('embryo', 'adult')
+    brainMarks <- loadAllMarks(brainMarkConditions)
+    brainMarks$embryo <- brainMarks$`e14.5-brain`
+    brainMarks$adult <- map(rbind, brainMarks$cortex, brainMarks$cerebellum)
+
+    marks = list(liver = liverMarks, brain = brainMarks)
+
+    testAllExpressedMarks <- function (tissue, windowSize)
+        list(embryo = sapply(marks[[tissue]]$embryo,
+                             .(mark = testMark(sprintf('%s-e15.5', tissue),
+                                               mark, windowSize))),
+             adult = sapply(marks[[tissue]]$adult,
+                            .(mark = testMark(sprintf('%s-P29', tissue),
+                                              mark, windowSize)))) %|%
         lp(map, unlist) %|% lp(do.call, rbind)
 
     windowSizes <- c(100, 500, 1000)
-    allTests <- setNames(lapply(windowSizes, testAllMarks), windowSizes)
+    expressedTests <- map(.(tissue = map(lp(testAllExpressedMarks, tissue),
+                                         windowSizes) %|% p(setNames, windowSizes)),
+                          names(marks))
 
     mkdir('results/shen')
 
-    writeExpressedData <- function (name, data) {
-        filename = sprintf('results/shen/expressed-enrichment-pval-ws-%s.tsv',
-                           name)
+    writeExpressedData <- function (tissue, windowSize, data) {
+        filename = sprintf('results/shen/pvalues-expressed-%s-ws-%s.tsv',
+                           tissue, windowSize)
         write.table(data, filename, sep = '\t', quote = FALSE, col.names = NA)
     }
 
-    map(writeExpressedData, names(allTests), allTests) %|% invisible
+    map(.(tissue, data = map(.(ws, data = writeExpressedData(tissue, ws, data)),
+                             names(data), data)),
+        names(expressedTests), expressedTests) %|% invisible
+
+    cat('# Test for enrichment of marks near differentially expressed tRNA genes\n')
+
+    testAllUpregulatedMarks <- function (tissue, windowSize, threshold) {
+        trnas <- trnaDeResults[[tissue]]$e15.5$P29
+        test <- function (mark)
+            testUpregulatedGeneMarkEnrichment(trnas, mark, windowSize, threshold)
+
+        list(embryo = sapply(marks[[tissue]]$embryo, test),
+             adult = sapply(marks[[tissue]]$adult, test)) %|%
+        lp(map, unlist) %|% lp(do.call, rbind)
+    }
+
+    upregulatedTests <- map(.(tissue = map(lp(testAllUpregulatedMarks, tissue),
+                                           windowSizes, 0.01) %|% p(setNames, windowSizes)),
+                            names(marks))
+
+    writeUpregulatedData <- function (tissue, windowSize, data) {
+        filename = sprintf('results/shen/pvalues-de-%s-ws-%s.tsv',
+                           tissue, windowSize)
+        write.table(data, filename, sep = '\t', quote = FALSE, col.names = NA)
+    }
+
+    map(.(tissue, data = map(.(ws, data = writeUpregulatedData(tissue, ws, data)),
+                             names(data), data)),
+        names(upregulatedTests), upregulatedTests) %|% invisible
 }
