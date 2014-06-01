@@ -117,11 +117,6 @@ def histogram(transcripts, genes):
         for key, value in hist.items():
             total[key] += value
 
-#    if len(genes) == 0:
-#        # Calculate background distribution
-#        genes = [(gene, 1.0) for gene in transcripts.keys()]
-#        sys.stderr.write('{}\n'.format(len(genes)))
-
     total = empty_codon_dict()
     failures = 0
     for expression in genes:
