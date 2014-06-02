@@ -452,6 +452,10 @@ if (! interactive()) {
     }), list(codonUsageData, stableCodonUsageData, lowCodonUsageData),
         c('', 'stable-', 'low-')) %|% p(unlist, recursive = FALSE)
 
+    # Account for wobble positions in codon-anticodon pairing
+
+    source('scripts/wobble-pairing-1.R')
+
     local({
         on.exit(dev.off())
         pdf('plots/usage/codon-correlation-comparison.pdf')
