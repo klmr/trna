@@ -107,7 +107,9 @@ wobbleWeights <- local({
 weightedWobblePairing <- function (codonWeights)
     colSums(wobbleWeights[names(codonWeights), ] * codonWeights)
 
-plotWobbleCodonCorrelation <- function (codonUsageData) {
+mkdir('plots/wobble/all-alt')
+
+local({
     mrna <- relativeData(codonUsageData)
 
     # The Python scripts counts stop codon usage. Remove them.
@@ -125,42 +127,11 @@ plotWobbleCodonCorrelation <- function (codonUsageData) {
     trnaCodons[onlym, ] <- 0
     # And ensure that the row order is the same.
     trna <- relativeData(trnaCodons[rownames(mrna), ])
-    maxima <- findPlotMaxima(trna, mrna)
 
-    par(mfrow = c(4, 3))
-
-    map(.(tissue = {
-        map(.(stage = {
-            data <- columnsForCondition(trna, mrna, tissue, stage)
-            plot(data$trna, data$mrna,
-                 xlab = 'Proportion of tRNA isoacceptors',
-                 ylab = 'Proportion of mRNA codon usage',
-                 main = sprintf('Correlation accounting for\nwobble rules in %s %s', readable(stage), readable(tissue)),
-                 xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
-                 col = tissueColor[tissue],
-                 pch = 20, las = 1)
-            model <- lm(mrna ~ trna, data)
-            abline(model)
-            par(usr = c(0, 1, 0, 1))
-            rho <- cor(data$trna, data$mrna, method = 'spearman')
-            r2 <- cor(data$trna, data$mrna, method = 'pearson')
-            prho <- cor.test(data$trna, data$mrna, method = 'spearman')$p.value
-            pr2 <- cor.test(data$trna, data$mrna, method = 'pearson')$p.value
-            message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
-            text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
-                                   italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
-                 adj = c(1.1, -0.1))
-
-            rho
-        }), stages) %|% unlist
-    }), tissues)
-}
-
-mkdir('plots/wobble/all-alt')
-
-local({
     on.exit(dev.off())
     pdf('plots/wobble/all-alt/correlations-all-genes.pdf', width = 7, height = 10,
         family = plotFamily)
-    plotWobbleCodonCorrelation(codonUsageData)
+
+    plotCodonAnticodonCorrelations(trna, mrna,
+        title = 'Correlation accounting for\nwobble rules in %s %s')
 })
