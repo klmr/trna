@@ -44,8 +44,6 @@ codonUsageProp <- do.call(rbind, codonUsageProp)
 
 duplicateAnticodons <- allDuplicated(preferredAnticodons)
 
-unadjustedCodonUsage <- lapply(unpairedCodons,
-                               .(codon = mrna[
 trna[duplicateAnticodons, ] <- trna[duplicateAnticodons, ] * codonUsageProp
 
 plotCodonAnticodonCorrelations <- function (trna, mrna, excludeZeros = FALSE) {
