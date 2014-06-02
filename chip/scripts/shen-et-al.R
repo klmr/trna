@@ -8,6 +8,17 @@ local({
     source('scripts/de.R')
 })
 
+setdiff.data.frame <- function (x, y)
+    x[setdiff(rownames(x), rownames(y)), ]
+
+# For DESeq3’s new result object
+setdiff.DataFrame <- setdiff.data.frame
+
+setdiff.default <- setdiff
+
+setdiff <- function (x, y)
+    UseMethod('setdiff')
+
 require(plyr) # for adply
 
 inNeighborhood <- function (gene, enhancers, windowSize)
@@ -71,6 +82,7 @@ if (! interactive()) {
     cat('# Generate colocalisation with histone marks from Shen et al\n')
 
     trnaLoadData()
+    trnaNormalizeData()
     trnaSetupCountDataSet()
     trnaPairwiseDiffentialExpression()
 
