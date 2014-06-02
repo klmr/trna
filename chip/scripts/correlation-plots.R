@@ -455,6 +455,7 @@ if (! interactive()) {
     # Account for wobble positions in codon-anticodon pairing
 
     source('scripts/wobble-pairing-1.R')
+    local(source('scripts/wobble-pairing-2.R'))
 
     local({
         on.exit(dev.off())
