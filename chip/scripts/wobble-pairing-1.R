@@ -156,11 +156,11 @@ plotWobbleCodonCorrelation <- function (codonUsageData) {
     }), tissues)
 }
 
-mkdir('plots/wobble')
+mkdir('plots/wobble/all-alt')
 
 local({
     on.exit(dev.off())
-    pdf('plots/wobble/correlations-all-genes.pdf', width = 7, height = 10,
+    pdf('plots/wobble/all-alt/correlations-all-genes.pdf', width = 7, height = 10,
         family = plotFamily)
     plotWobbleCodonCorrelation(codonUsageData)
 })
