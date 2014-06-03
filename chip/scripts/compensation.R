@@ -259,7 +259,7 @@ if (! interactive()) {
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
 
     # To look at correlation coefficients, filter everything with less than
-    # ten correlation data points (i.e. four genes per acceptor).
+    # ten correlation data points (i.e. more than five genes per acceptor).
 
     useOnly <- map(item('observations') %|>% length %|>% p(`>`, 10),
                    compensationData) %|% unlist
