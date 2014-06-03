@@ -267,10 +267,13 @@ if (! interactive()) {
     testValues <- pvalues[useOnly]
     testValues <- sort(testValues)
     testValues <- cbind(pvalue = testValues,
-                        adjusted = p.adjust(testValues, method = 'fdr'))
+                        adjusted = p.adjust(testValues, method = 'fdr')) %|%
+        as.data.frame
 
     output <- 'results/compensation/'
     mkdir(output)
     write.table(testValues, file.path(output, 'tested-isoacceptors.tsv'),
                 sep = '\t', quote = FALSE, col.names = NA)
+
+    local(source('scripts/genomic-clusters.R'))
 }
