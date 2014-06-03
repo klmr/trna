@@ -116,16 +116,32 @@ local({
     pdf('plots/compensation/isoacceptor-enrichment-of-genomic-clusters.pdf',
         family = plotFamily)
 
-    plot(density(rowMeans(randomBackground)), xlim = c(0, 1),
-         col = last(colors), lwd = 2, las = 2,
-         main = 'Percentage of genes colocalising in clusters, per isoacceptor')
-    hist(rowMeans(randomBackground), col = transparent(last(colors)),
-         border = NA, add = TRUE)
-    lines(density(allPercentInCluster), col = colors[1], lwd = 2)
-    hist(allPercentInCluster, col = transparent(colors[1]), border = NA, add = TRUE)
+    hist(randomBackground[, 1], xlim = c(0, 1), ylim = c(0, 25),
+         col = transparent(last(colors), 0.15), border = NA, las = 1,
+         xlab = 'Percentage of genes in clusters per isoacceptor',
+         main = 'Predominance of clustered genes')
+
+    apply(randomBackground[, -1], COLS,
+          .(x = hist(x, col = transparent(last(colors)), border = NA,
+                     add = TRUE)))
+
+    hist(allPercentInCluster, col = transparent(colors[1]), border = NA,
+         add = TRUE)
+
     legend('topright', bty = 'n', fill = c(last(colors), colors[1]), border = NA,
            legend = c('Background from random sampling', 'Isoacceptor families'))
 })
+
+# Test whether the (mean) genes-in-cluster percentage per isoacceptor family is
+# higher than by chance (i.e. in the randomly generated data):
+
+meanIsSmaller <- mean(allPercentInCluster) < colMeans(randomBackground)
+
+# Test whether most of the means are smaller (H0: 50% smaller, 50% larger)
+pClusterPercentageEqual <- binom.test(count(meanIsSmaller),
+                                      length(meanIsSmaller))$p.value
+
+message('p(H0): means are equal = ', pClusterPercentageEqual)
 
 # Test whether isoacceptors with disproportionately high cluster coverage are
 # enriched in set of isoacceptors showing evidence of compensation effects.
