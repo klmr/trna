@@ -24,6 +24,10 @@ source('plot-correlations.R')
 source('plot-radial.R')
 source('plot-codons.R')
 
+allDuplicated <- function (x, incomparables = FALSE)
+    let(duplicates = x[duplicated(x, incomparables)],
+        vapply(x, `%in%`, logical(1), duplicates))
+
 shuffleRows <- function (df)
     `rownames<-`(df[sample.int(nrow(df)), , drop = FALSE], rownames(df))
 

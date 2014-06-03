@@ -21,9 +21,6 @@ alternativeAnticodons <- lapply(alternativeAnticodons,
 preferredAnticodons <- revcomp(allCodons)
 preferredAnticodons[unpairedCodons] <- alternativeAnticodons
 
-allDuplicated <- function (x)
-    Reduce(`|`, lapply(x[duplicated(x)], p(`==`, x)))
-
 mrna <- relativeData(codonUsageData)
 # The Python scripts counts stop codon usage. Remove them.
 mrna <- mrna[grep('TAA|TAG|TGA', rownames(mrna), invert = TRUE), ]
