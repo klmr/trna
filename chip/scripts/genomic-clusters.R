@@ -146,13 +146,21 @@ message('p(H0): means are equal = ', pClusterPercentageEqual)
 # Test whether isoacceptors with disproportionately high cluster coverage are
 # enriched in set of isoacceptors showing evidence of compensation effects.
 
-highestBackground <- max(rowMeans(randomBackground))
-test <- names(allPercentInCluster[allPercentInCluster > highestBackground])
+test <- names(allPercentInCluster[allPercentInCluster > mean(allPercentInCluster)])
 compensatedIsoacceptors <- rownames(testValues[testValues$adjusted < 0.05, ])
 uncompensatedIsoacceptors <- rownames(testValues[testValues$adjusted >= 0.05, ])
 
-enrichedInCompensated <- count(test %in% compensatedIsoacceptors) / length(test)
-enrichedInUncompensated <- count(test %in% uncompensatedIsoacceptors) / length(test)
+enrichedInCompensated <- count(test %in% compensatedIsoacceptors)
+enrichedInUncompensated <- count(test %in% uncompensatedIsoacceptors)
+
+message(enrichedInCompensated, ' out of ', length(compensatedIsoacceptors),
+        sprintf(' (%2.0f%%)', 100 * enrichedInCompensated /
+                length(compensatedIsoacceptors)),
+        ' isoacceptors(compensated) are clustered more than average')
+message(enrichedInUncompensated, ' out of ', length(uncompensatedIsoacceptors),
+        sprintf(' (%2.0f%%)', 100 * enrichedInUncompensated /
+                length(uncompensatedIsoacceptors)),
+        ' isoacceptors(uncompensated) are clustered more than average')
 
 # Next, we count the number of clusters used in an isoacceptor, to test the
 # hypothesis that non-compensated isoacceptors use more clusters - in other
@@ -169,3 +177,20 @@ clusterCount <- function (acceptor) {
 
 compensatedClusters <- sapply(compensatedIsoacceptors, clusterCount)
 uncompensatedClusters <- sapply(uncompensatedIsoacceptors, clusterCount)
+
+local({
+    on.exit(dev.off())
+    pdf('plots/compensation/cluster-enrichment-in-isoacceptors.pdf',
+        family = plotFamily)
+    hist(uncompensatedClusters, xlim = c(0, 1), col = colors[2],
+         main = 'Distribution of counts of clusters in isoacceptor families',
+         xlab = 'Count of clusters / size of family')
+    hist(compensatedClusters, xlim = c(0, 1), col = transparent(colors[1]),
+         add = TRUE)
+    p <- wilcox.test(compensatedClusters, uncompensatedClusters)$p.value
+    legend('topleft', legend = c('Clusters without compensation',
+                                 'Clusters with compensation'),
+           fill = c(colors[2], transparent(colors[1])), bty = 'n',
+           border = NA)
+    text(0.2, 1, sprintf('p = %0.3f', p))
+})
