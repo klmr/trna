@@ -300,12 +300,19 @@ plotSimulatedDistribution <- function(type, codons, acceptors, datatype) {
     }), corr, colnames(corr)) %|% invisible
 }
 
-plotCodonAnticodonCorrelations <- function (trna, mrna, excludeZeros = FALSE, title) {
+plotCodonAnticodonCorrelations <- function (trna, mrna, excludeZeros = FALSE,
+                                            title, xlab, ylab) {
     maxima <- findPlotMaxima(trna, mrna)
     par(mfrow = c(4, 3))
 
     if (missing(title))
         title <- 'Codons in %s %s'
+
+    if (missing(xlab))
+        xlab <- 'Proportion of tRNA isoacceptors'
+
+    if (missing(ylab))
+        ylab <- 'Proportion of mRNA codon usage'
 
     map(.(tissue = {
         map(.(stage = {
@@ -314,8 +321,7 @@ plotCodonAnticodonCorrelations <- function (trna, mrna, excludeZeros = FALSE, ti
                 ifelse(data$trna == 0, last(colors), tissueColor[tissue]) else
                     tissueColor[tissue]
             plot(data$trna, data$mrna,
-                 xlab = 'Proportion of tRNA isoacceptors',
-                 ylab = 'Proportion of mRNA codon usage',
+                 xlab = xlab, ylab = ylab,
                  main = sprintf(title, readable(stage), readable(tissue)),
                  xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
                  col = colors, pch = 20, las = 1)
