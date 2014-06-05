@@ -45,9 +45,9 @@ trna[duplicateAnticodons, ] <- trna[duplicateAnticodons, ] * codonUsageProp
 
 mkdir('plots/wobble/only-missing-alt')
 
-local({
+plotWobbleCorrelation <- function () {
     on.exit(dev.off())
     pdf('plots/wobble/only-missing-alt/correlations-all-genes.pdf', width = 7,
         height = 10, family = plotFamily)
     plotCodonAnticodonCorrelations(trna, mrna)
-})
+}
