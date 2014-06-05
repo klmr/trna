@@ -476,6 +476,14 @@ if (! interactive()) {
         plotWobbleCorrelation()
     })
 
+    # Count isoacceptor family sizes only
+
+    local({
+        source('scripts/family-sizes.R')
+        plotIsoacceptorFamilySize()
+        plotIsoacceptorFamilySizeNoWobbling()
+    })
+
     local({
         on.exit(dev.off())
         pdf('plots/usage/codon-correlation-comparison.pdf')
