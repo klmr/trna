@@ -178,6 +178,14 @@ clusterCount <- function (acceptor) {
 compensatedClusters <- sapply(compensatedIsoacceptors, clusterCount)
 uncompensatedClusters <- sapply(uncompensatedIsoacceptors, clusterCount)
 
+percentages <- sort(union(compensatedClusters, uncompensatedClusters))
+counttab <- sapply(percentages, .(p = c(count(compensatedClusters == p),
+                                        count(uncompensatedClusters == p))))
+significant <- chisq.test(counttab)
+message('Difference between compensated and uncompensated isoacceptor ',
+        'families: p = ', significant$p.value)
+
+
 local({
     on.exit(dev.off())
     pdf('plots/compensation/cluster-enrichment-in-isoacceptors.pdf',
