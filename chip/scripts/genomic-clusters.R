@@ -185,7 +185,6 @@ significant <- chisq.test(counttab)
 message('Difference between compensated and uncompensated isoacceptor ',
         'families: p = ', significant$p.value)
 
-
 local({
     on.exit(dev.off())
     pdf('plots/compensation/cluster-enrichment-in-isoacceptors.pdf',
