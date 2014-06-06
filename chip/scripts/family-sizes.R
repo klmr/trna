@@ -2,12 +2,13 @@
 
 source('scripts/wobble-pairing-2.R')
 
-isoacceptorFamilySizes <- as.list(by(trnaAnnotation, trnaAnnotation$Acceptor,
-                                     nrow)) %|% unlist
+rawIsoacceptorFamilySizes <- as.list(by(trnaUnfilteredAnnotation,
+                                        trnaUnfilteredAnnotation$Acceptor,
+                                        nrow)) %|% unlist
 
 # Add nonexistent anticodons by selecting against preferred anticodons
 
-isoacceptorFamilySizes <- isoacceptorFamilySizes[preferredAnticodons]
+isoacceptorFamilySizes <- rawIsoacceptorFamilySizes[preferredAnticodons]
 trna <- do.call(cbind, map(.(. = isoacceptorFamilySizes), colnames(mrna)))
 trna[duplicateAnticodons] <- trna[duplicateAnticodons] * codonUsageProp
 
@@ -23,7 +24,7 @@ plotIsoacceptorFamilySize <- function () {
 
 plotIsoacceptorFamilySizeNoWobbling <- function () {
     pairedAnticodons <- revcomp(rownames(codonUsageData))
-    familySizeMatrix <- do.call(cbind, map(.(. = isoacceptorFamilySizes[pairedAnticodons]),
+    familySizeMatrix <- do.call(cbind, map(.(. = rawIsoacceptorFamilySizes[pairedAnticodons]),
                                            colnames(codonUsageData)))
 
     familySizeMatrix[is.na(familySizeMatrix)] <- 0
