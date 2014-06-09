@@ -259,7 +259,7 @@ if (! interactive()) {
     pvalues <- unlist(map(item('p.value') %.% chisq.test, compensationData))
 
     # To look at correlation coefficients, filter everything with less than
-    # ten correlation data points (i.e. four genes per acceptor).
+    # ten correlation data points (i.e. more than five genes per acceptor).
 
     useOnly <- map(item('observations') %|>% length %|>% p(`>`, 10),
                    compensationData) %|% unlist
@@ -267,10 +267,13 @@ if (! interactive()) {
     testValues <- pvalues[useOnly]
     testValues <- sort(testValues)
     testValues <- cbind(pvalue = testValues,
-                        adjusted = p.adjust(testValues, method = 'bonferroni'))
+                        adjusted = p.adjust(testValues, method = 'fdr')) %|%
+        as.data.frame
 
     output <- 'results/compensation/'
     mkdir(output)
     write.table(testValues, file.path(output, 'tested-isoacceptors.tsv'),
                 sep = '\t', quote = FALSE, col.names = NA)
+
+    local(source('scripts/genomic-clusters.R'))
 }

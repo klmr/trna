@@ -36,7 +36,11 @@ colocalizationForContrast <- function (tissue, a, b, threshold, windowSize) {
     prepare <- function (data, annotation) {
         all <- data[[tissue]][[a]][[b]]
         de <- getDe(all)
+        # NB: Yes, `< 0` is correct: we look at contrast A–B and want to know which
+        # genes are more highly expressed in contrast A, i.e. whose expression gets
+        # lowered in B compared to A.
         up <- subset(de, log2FoldChange < 0)
+        # Ditto
         down <- subset(de, log2FoldChange > 0)
         no <- setdiff(all, de)
         lapply(list(all = all, de = de, up = up, down = down, no = no),

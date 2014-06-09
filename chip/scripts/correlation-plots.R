@@ -300,6 +300,50 @@ plotSimulatedDistribution <- function(type, codons, acceptors, datatype) {
     }), corr, colnames(corr)) %|% invisible
 }
 
+plotCodonAnticodonCorrelations <- function (trna, mrna, excludeZeros = FALSE,
+                                            title, xlab, ylab) {
+    maxima <- findPlotMaxima(trna, mrna)
+    par(mfrow = c(4, 3))
+
+    if (missing(title))
+        title <- 'Codons in %s %s'
+
+    if (missing(xlab))
+        xlab <- 'Proportion of tRNA isoacceptors'
+
+    if (missing(ylab))
+        ylab <- 'Proportion of mRNA codon usage'
+
+    map(.(tissue = {
+        map(.(stage = {
+            data <- columnsForCondition(trna, mrna, tissue, stage)
+            colors <- if (excludeZeros)
+                ifelse(data$trna == 0, last(colors), tissueColor[tissue]) else
+                    tissueColor[tissue]
+            plot(data$trna, data$mrna,
+                 xlab = xlab, ylab = ylab,
+                 main = sprintf(title, readable(stage), readable(tissue)),
+                 xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
+                 col = colors, pch = 20, las = 1)
+            if (excludeZeros)
+                data <- data[data$trna != 0, ]
+            model <- lm(mrna ~ trna, data)
+            abline(model)
+            par(usr = c(0, 1, 0, 1))
+            rho <- cor(data$trna, data$mrna, method = 'spearman')
+            r2 <- cor(data$trna, data$mrna, method = 'pearson')
+            prho <- cor.test(data$trna, data$mrna, method = 'spearman')$p.value
+            pr2 <- cor.test(data$trna, data$mrna, method = 'pearson')$p.value
+            message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
+            text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
+                                   italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
+                 adj = c(1.1, -0.1))
+
+            rho
+        }), stages) %|% unlist
+    }), tissues)
+}
+
 plotCodonsByStage <- function (codonUsageData) {
     trnaCodons <- groupby(trnaNormDataCond, trnaAnnotation[rownames(trnaNormDataCond), 'Acceptor'])
     rownames(trnaCodons) <- revcomp(rownames(trnaCodons))
@@ -308,36 +352,7 @@ plotCodonsByStage <- function (codonUsageData) {
     # Ensure same row order.
     trna <- relativeData(trnaCodons[rownames(codonUsageData), ])
     mrna <- relativeData(codonUsageData)
-    maxima <- findPlotMaxima(trna, mrna)
-
-    par(mfrow = c(4, 3))
-
-    map(.(tissue = {
-        map(.(stage = {
-            data <- columnsForCondition(trna, mrna, tissue, stage)
-            plot(data$trna, data$mrna,
-                 xlab = 'Proportion of tRNA isoacceptors',
-                 ylab = 'Proportion of mRNA codon usage',
-                 main = sprintf('Codons in %s %s', readable(stage), readable(tissue)),
-                 xlim = c(0, maxima['trna']), ylim = c(0, maxima['mrna']),
-                 col = ifelse(data$trna == 0, last(colors), tissueColor[tissue]),
-                 pch = 20, las = 1)
-            cd <- data[data$trna != 0, ]
-            model <- lm(mrna ~ trna, cd)
-            abline(model)
-            par(usr = c(0, 1, 0, 1))
-            rho <- cor(cd$trna, cd$mrna, method = 'spearman')
-            r2 <- cor(cd$trna, cd$mrna, method = 'pearson')
-            prho <- cor.test(cd$trna, cd$mrna, method = 'spearman')$p.value
-            pr2 <- cor.test(cd$trna, cd$mrna, method = 'pearson')$p.value
-            message(tissue, '-', stage, ': prho=', prho, ' pr2=', pr2)
-            text(1, 0, bquote(atop(' ' ~ italic(p) == .(sprintf('%.2f', prho)) ~ (rho == .(sprintf('%.2f', rho))),
-                                   italic(p) == .(sprintf('%.2f', pr2)) ~ (R^2 == .(sprintf('%.2f', r2))))),
-                 adj = c(1.1, -0.1))
-
-            rho # Return a list of the correlation coefficients
-        }), stages) %|% unlist
-    }), tissues)
+    plotCodonAnticodonCorrelations(trna, mrna, excludeZeros = TRUE)
 }
 
 plotAminAcidsByStage <- function () {
@@ -451,6 +466,23 @@ if (! interactive()) {
         plotCodonsByStage(data)
     }), list(codonUsageData, stableCodonUsageData, lowCodonUsageData),
         c('', 'stable-', 'low-')) %|% p(unlist, recursive = FALSE)
+
+    # Account for wobble positions in codon-anticodon pairing
+
+    source('scripts/wobble-pairing-1.R')
+
+    local({
+        source('scripts/wobble-pairing-2.R')
+        plotWobbleCorrelation()
+    })
+
+    # Count isoacceptor family sizes only
+
+    local({
+        source('scripts/family-sizes.R')
+        plotIsoacceptorFamilySize()
+        plotIsoacceptorFamilySizeNoWobbling()
+    })
 
     local({
         on.exit(dev.off())
