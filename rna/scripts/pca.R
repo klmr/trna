@@ -3,7 +3,9 @@ source('scripts/load-data.R')
 
 mrnaPcaCreatePlots <- function () {
     correlated <- cor(mrnaNormData, method = 'spearman')
-    pc <- prcomp(correlated)
+    pc <- prcomp(t(correlated), scale. = TRUE)
+    #nonzero = mrnaNormData[apply(mrnaNormData, 1, function (x) sum(x) != 0), ]
+    #pc <- prcomp(t(nonzero), scale. = TRUE)
 
     heatmapLab <- sapply(mrnaMapping[colnames(mrnaNormData), 'Condition'], readable)
     pdf(file.path(output, 'mrna-heatmap.pdf'), width = 6, height = 6)

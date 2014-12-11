@@ -5,7 +5,11 @@ library(gplots)
 
 trnaPcaCreatePlots <- function () {
     correlated <- cor(trnaNormData, method = 'spearman')
-    trnaPC <- prcomp(-correlated)
+    trnaPC <- prcomp(t(correlated), scale. = TRUE)
+    # Flip data points on their axes to make the plot have the same orientation
+    # as the mRNA plot. This doesn't affect the interpretation of the PCA.
+    trnaPC$x <- -trnaPC$x
+    #trnaPC <- prcomp(t(trnaNormData), scale. = TRUE)
 
     heatmapLab <- sapply(trnaMapping[colnames(trnaNormData), 'Condition'], readable)
     pdf(file.path(output, 'trna-heatmap.pdf'), width = 6, height = 6, family = plotFamily)
