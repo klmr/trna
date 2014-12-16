@@ -27,7 +27,7 @@ setdiff <- function (x, y)
 colocalizationForContrast <- function (tissue, a, b, threshold, windowSize) {
     require(plyr) # for adply
 
-    getDe <- function (data) subset(data, ! is.na(padj) & padj <= threshold)
+    getDe <- function (data) subset(data, ! is.na(padj) & padj < threshold)
 
     annotate <- function (data, annotation)
         let(selector = if (is.null(data$id)) rownames else item('id'),

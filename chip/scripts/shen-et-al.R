@@ -30,7 +30,7 @@ countEnhancersPerGene <- function (genes, enhancers, windowSize)
     adply(genes, ROWS, inNeighborhood, enhancers, windowSize)$V1
 
 deGenes <- function (allGenes, threshold)
-    subset(allGenes, ! is.na(padj) & padj <= threshold)
+    subset(allGenes, ! is.na(padj) & padj < threshold)
 
 genePositions <- function (genes, annotation)
     annotation[rownames(genes), c('Chr', 'Start', 'End')]
