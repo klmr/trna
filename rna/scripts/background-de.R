@@ -17,7 +17,7 @@ mrnaDifferentFromBackground <- function (fdr = 0.05) {
         cds <- newCountDataSet(mrnaRawCounts, condition)
         cds <- estimateDispersions(estimateSizeFactors(cds))
         res <- nbinomTest(cds, 'background', condB)
-        res[! is.na(res$padj) & res$padj <= fdr, ]
+        res[! is.na(res$padj) & res$padj < fdr, ]
     }
 
     require(parallel)

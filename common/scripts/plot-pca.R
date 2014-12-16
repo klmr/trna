@@ -22,24 +22,24 @@ plotProgression <- function (data, dim1, dim2, values1, values2, mapping, main, 
     variance <- summary(data)$importance['Proportion of Variance', ]
     axisLab <- '%s (%.0f%% variance explained)'
 
-    lim <- sapply(1:2, function (p) c(min(data$rotation[, p]),
-                                      max(data$rotation[, p])) * 1.5)
+    lim <- sapply(1:2, function (p) c(min(data$x[, p]),
+                                      max(data$x[, p])) * 1.5)
 
     par(bty = 'n', xpd = TRUE, las = 1)
-    plot(data$rotation[, 1], data$rotation[, 2],
+    plot(data$x[, 1], data$x[, 2],
          xlab = sprintf(axisLab, 'PC1', variance[1] * 100),
          ylab = sprintf(axisLab, 'PC2', variance[2] * 100),
-         col = colStage(rownames(data$rotation)),
-         pch = pchCluster(rownames(data$rotation)),
+         col = colStage(rownames(data$x)),
+         pch = pchCluster(rownames(data$x)),
          cex = 1.2, xlim = lim[, 1], ylim = lim[, 2],
          main = main)
-    text(data$rotation[, 1], data$rotation[, 2],
+    text(data$x[, 1], data$x[, 2],
          adj = c(-0.5, 0.5),
-         labels = readable(as.character(mapping[rownames(data$rotation), dim2])))
+         labels = readable(as.character(mapping[rownames(data$x), dim2])))
 
     if (legend) {
         graphics::legend('topright', legend = readable(values1),
-                         col = cols, inset = c(0, -max(data$rotation[, 2]) / 3),
+                         col = cols, inset = c(0, -max(data$x[, 2]) / 3),
                          pch = symbols, pt.lwd = 3, bty = 'n', cex = 1.2)
     }
 }
