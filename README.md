@@ -10,15 +10,17 @@ Please consult the online methods for more details.
 Update
 ------
 
-A previous version of the code plotted the rotation eigenvectors of the PCAs,
-rather than the rotated data. The current version amends this. The changes are
-highlighted in [commit 4860f48](commit/4860f48).
+A previous version of the code contained a small error in the plotting code for
+the PCA summary plots. A corrected version of the code has been committed. The
+update does not affect the data or the interpretation of the results in our
+manuscript. The changes are highlighted in [commit
+4860f48](../../commit/4860f48).
 
 Dependencies
 ------------
 
 This pipeline requires Python 2.7 and R 3.0. Dependencies on R packages are
-listed [in the `DEPENDS` file](blob/master/DEPENDS).
+listed [in the `DEPENDS` file](DEPENDS).
 Further dependencies are:
 
 * Meme (4.9.0)
