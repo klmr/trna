@@ -82,8 +82,8 @@ if (! interactive()) {
     cat('# Generate colocalisation with histone marks from Shen et al\n')
 
     trnaLoadData()
-    trnaNormalizeData()
     trnaSetupCountDataSet()
+    trnaNormalizeData()
     trnaPairwiseDiffentialExpression()
 
     cat('# Test for enrichment of marks near active tRNA genes\n')
