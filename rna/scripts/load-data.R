@@ -7,10 +7,8 @@ mrnaLoadData <- function () {
         return()
 
     mrnaRawCounts <- read.table(mrnaDataFile, header = TRUE, row.names = 1)
-    mrnaMapping <- read.table(mrnaMappingFile, header = FALSE)
-    rownames(mrnaMapping) <- mrnaMapping$V3
-    mrnaMapping$V3 <- NULL
-    colnames(mrnaMapping) <- c('Tissue', 'Stage')
+    mrnaMapping <- read.table(mrnaMappingFile, header = FALSE, row.names = 3,
+                             col.names = c('Tissue', 'Stage', ''))
     mrnaMapping$Condition <- paste(mrnaMapping$Tissue, mrnaMapping$Stage, sep = '-')
     # Ensure corresponding order.
     mrnaMapping <- mrnaMapping[colnames(mrnaRawCounts), ]
