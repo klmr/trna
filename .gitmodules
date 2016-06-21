@@ -4,5 +4,5 @@
 	branch = trna-project
 [submodule "rna/scripts/goo"]
 	path = rna/scripts/goo
-	url = git@bitbucket.org:klmr/pygoo.git
+	url = https://bitbucket.org/klmr/pygoo.git
 	branch = trna-project
